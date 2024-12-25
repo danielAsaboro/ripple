@@ -2,13 +2,20 @@
 
 import React from "react";
 import Button from "@/components/common/Button";
+import Image from "next/image";
 
 const Hero = () => {
   return (
     <div className="relative flex min-h-[600px] w-full flex-col items-center justify-center bg-slate-900 px-4 py-20 text-center">
       <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <img src="/logo.svg" alt="Rippl" className="h-8 w-8" />
+          <Image
+            src="/logo.svg"
+            alt="Rippl"
+            className="h-8 w-8"
+            width={8}
+            height={8}
+          />
           <span className="text-xl font-bold text-white">Rippl</span>
         </div>
         <nav className="hidden md:flex items-center space-x-8 text-slate-200">

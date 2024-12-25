@@ -1,5 +1,5 @@
 // File: /components/common/Navigation/Sidebar.tsx
-
+"use client";
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -107,7 +107,13 @@ const Sidebar = ({ className }: SidebarProps) => {
     >
       <div className="mb-8">
         <Link href="/" className="flex items-center gap-2">
-          <Image src="/logo.svg" alt="Rippl" className="h-8 w-8" />
+          <Image
+            src="/logo.svg"
+            alt="Rippl"
+            className="h-8 w-8"
+            width={8}
+            height={8}
+          />
           <span className="text-xl font-bold text-white">Rippl</span>
         </Link>
       </div>
@@ -146,4 +152,3 @@ const Sidebar = ({ className }: SidebarProps) => {
 };
 
 export default Sidebar;
-

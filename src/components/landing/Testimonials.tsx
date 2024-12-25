@@ -22,7 +22,7 @@ const testimonials: Testimonial[] = [
   {
     id: "2",
     content:
-      "It feels amazing to know my money is making a difference in someone's life.",
+      "It feels amazing to know my money is making a difference in someone&apos;s life.",
     author: "Christian Luke",
     role: "Community Member",
   },
@@ -45,7 +45,7 @@ const Testimonials = () => {
               >
                 <blockquote>
                   <p className="text-lg text-slate-200 mb-4">
-                    "{testimonial.content}"
+                    &ldquo;{testimonial.content}&rdquo;
                   </p>
                   <footer className="flex items-center gap-4">
                     <div className="h-10 w-10 rounded-full bg-slate-700" />
