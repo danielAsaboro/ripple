@@ -4,6 +4,7 @@ import React from "react";
 import { Search } from "lucide-react";
 import CampaignCard from "@/components/dashboard/CampaignCard";
 import Button from "@/components/common/Button";
+import CampaignGrid from "@/components/campaigns/CampaignGrid";
 
 const campaigns = [
   {
@@ -65,6 +66,15 @@ const campaigns = [
 ];
 
 export default function CampaignsPage() {
+  // const handleDonate = (campaignId: string) => {
+  //   // Handle donation logic
+  //   console.log("Donate to campaign:", campaignId);
+  // };
+
+  // const handleShare = (campaignId: string) => {
+  //   // Handle share logic
+  //   console.log("Share campaign:", campaignId);
+  // };
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -91,6 +101,12 @@ export default function CampaignsPage() {
           <option value="newest">Newest</option>
         </select>
       </div>
+
+      {/* <CampaignGrid
+        campaigns={campaigns}
+        onDonate={handleDonate}
+        onShare={handleShare}
+      /> */}
 
       {/* Campaigns Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
