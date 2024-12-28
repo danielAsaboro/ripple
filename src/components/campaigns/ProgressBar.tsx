@@ -1,7 +1,7 @@
 // File: /components/campaigns/ProgressBar.tsx
 
 import React from "react";
-import { cn } from "@/lib/utils/ts-merge";
+import { cn } from "@/utils/ts-merge";
 
 interface ProgressBarProps {
   progress: number;
