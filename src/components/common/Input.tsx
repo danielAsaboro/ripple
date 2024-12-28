@@ -1,7 +1,7 @@
 // File: /components/common/Input.tsx
 
-import React from 'react';
-import { cn } from '@/lib/utils/ts-merge';
+import React from "react";
+import { cn } from "@/utils/ts-merge";
 
 export interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -13,13 +13,23 @@ export interface InputProps
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, error, label, helperText, leftIcon, rightIcon, ...props }, ref) => {
+  (
+    {
+      className,
+      type,
+      error,
+      label,
+      helperText,
+      leftIcon,
+      rightIcon,
+      ...props
+    },
+    ref
+  ) => {
     return (
       <div className="space-y-2">
         {label && (
-          <label className="text-sm font-medium text-slate-200">
-            {label}
-          </label>
+          <label className="text-sm font-medium text-slate-200">{label}</label>
         )}
         <div className="relative">
           {leftIcon && (
@@ -30,10 +40,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <input
             type={type}
             className={cn(
-              'flex h-10 w-full rounded-md border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
-              leftIcon && 'pl-10',
-              rightIcon && 'pr-10',
-              error && 'border-red-500 focus:ring-red-500',
+              "flex h-10 w-full rounded-md border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+              leftIcon && "pl-10",
+              rightIcon && "pr-10",
+              error && "border-red-500 focus:ring-red-500",
               className
             )}
             ref={ref}
@@ -48,14 +58,12 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {helperText && !error && (
           <p className="text-sm text-slate-400">{helperText}</p>
         )}
-        {error && (
-          <p className="text-sm text-red-500">{error}</p>
-        )}
+        {error && <p className="text-sm text-red-500">{error}</p>}
       </div>
     );
   }
 );
 
-Input.displayName = 'Input';
+Input.displayName = "Input";
 
 export default Input;

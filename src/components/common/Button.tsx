@@ -1,7 +1,7 @@
 // File: /components/common/Button.tsx
 
 import React from "react";
-import { cn } from "@/lib/utils/ts-merge";
+import { cn } from "@/utils/ts-merge";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "outline" | "ghost";

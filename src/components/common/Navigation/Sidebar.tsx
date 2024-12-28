@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils/ts-merge";
+import { cn } from "@/utils/ts-merge";
 import {
   LayoutGrid,
   LineChart,

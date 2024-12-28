@@ -1,6 +1,6 @@
 // File: /components/common/Card.tsx
 import React from "react";
-import { cn } from "@/lib/utils/ts-merge";
+import { cn } from "@/utils/ts-merge";
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: "default" | "secondary";

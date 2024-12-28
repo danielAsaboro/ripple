@@ -1,6 +1,6 @@
 // File: /components/common/Navigation/Header.tsx
 
-import { cn } from "@/lib/utils/ts-merge";
+import { cn } from "@/utils/ts-merge";
 import { Bell } from "lucide-react";
 
 interface HeaderProps {
