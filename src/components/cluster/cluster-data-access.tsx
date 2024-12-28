@@ -1,117 +1,150 @@
-'use client'
+// File: /components/cluster/cluster-data-access.tsx
+"use client";
 
-import { clusterApiUrl, Connection } from '@solana/web3.js'
-import { atom, useAtomValue, useSetAtom } from 'jotai'
-import { atomWithStorage } from 'jotai/utils'
-import { createContext, ReactNode, useContext } from 'react'
-import toast from 'react-hot-toast'
-
-export interface Cluster {
-  name: string
-  endpoint: string
-  network?: ClusterNetwork
-  active?: boolean
-}
+import { createContext, useContext, useEffect, useState } from "react";
+import { clusterApiUrl, Connection } from "@solana/web3.js";
 
 export enum ClusterNetwork {
-  Mainnet = 'mainnet-beta',
-  Testnet = 'testnet',
-  Devnet = 'devnet',
-  Custom = 'custom',
+  Mainnet = "mainnet-beta",
+  Devnet = "devnet",
+  Testnet = "testnet",
+  Localnet = "localnet",
 }
 
-// By default, we don't configure the mainnet-beta cluster
-// The endpoint provided by clusterApiUrl('mainnet-beta') does not allow access from the browser due to CORS restrictions
-// To use the mainnet-beta cluster, provide a custom endpoint
-export const defaultClusters: Cluster[] = [
+export interface Cluster {
+  name: string;
+  endpoint: string;
+  network?: ClusterNetwork;
+  active?: boolean;
+}
+
+interface ClusterContextState {
+  clusters: Cluster[];
+  cluster: Cluster;
+  setCluster: (cluster: Cluster) => void;
+  addCluster: (cluster: Cluster) => void;
+  deleteCluster: (cluster: Cluster) => void;
+  getExplorerUrl: (path: string) => string;
+}
+
+// Default clusters
+const defaultClusters: Cluster[] = [
   {
-    name: 'devnet',
-    endpoint: clusterApiUrl('devnet'),
-    network: ClusterNetwork.Devnet,
+    name: "Localnet",
+    endpoint: "http://127.0.0.1:8899",
+    network: ClusterNetwork.Localnet,
   },
-  { name: 'local', endpoint: 'http://localhost:8899' },
   {
-    name: 'testnet',
-    endpoint: clusterApiUrl('testnet'),
+    name: "Devnet",
+    endpoint: clusterApiUrl("devnet"),
+    network: ClusterNetwork.Devnet,
+    active: true,
+  },
+  {
+    name: "Testnet",
+    endpoint: clusterApiUrl("testnet"),
     network: ClusterNetwork.Testnet,
   },
-]
+  {
+    name: "Mainnet",
+    endpoint: clusterApiUrl("mainnet-beta"),
+    network: ClusterNetwork.Mainnet,
+  },
+];
 
-const clusterAtom = atomWithStorage<Cluster>('solana-cluster', defaultClusters[0])
-const clustersAtom = atomWithStorage<Cluster[]>('solana-clusters', defaultClusters)
+const ClusterContext = createContext<ClusterContextState | undefined>(
+  undefined
+);
 
-const activeClustersAtom = atom<Cluster[]>((get) => {
-  const clusters = get(clustersAtom)
-  const cluster = get(clusterAtom)
-  return clusters.map((item) => ({
-    ...item,
-    active: item.name === cluster.name,
-  }))
-})
-
-const activeClusterAtom = atom<Cluster>((get) => {
-  const clusters = get(activeClustersAtom)
-
-  return clusters.find((item) => item.active) || clusters[0]
-})
-
-export interface ClusterProviderContext {
-  cluster: Cluster
-  clusters: Cluster[]
-  addCluster: (cluster: Cluster) => void
-  deleteCluster: (cluster: Cluster) => void
-  setCluster: (cluster: Cluster) => void
-  getExplorerUrl(path: string): string
-}
-
-const Context = createContext<ClusterProviderContext>({} as ClusterProviderContext)
-
-export function ClusterProvider({ children }: { children: ReactNode }) {
-  const cluster = useAtomValue(activeClusterAtom)
-  const clusters = useAtomValue(activeClustersAtom)
-  const setCluster = useSetAtom(clusterAtom)
-  const setClusters = useSetAtom(clustersAtom)
-
-  const value: ClusterProviderContext = {
-    cluster,
-    clusters: clusters.sort((a, b) => (a.name > b.name ? 1 : -1)),
-    addCluster: (cluster: Cluster) => {
-      try {
-        new Connection(cluster.endpoint)
-        setClusters([...clusters, cluster])
-      } catch (err) {
-        toast.error(`${err}`)
+export function ClusterProvider({ children }: { children: React.ReactNode }) {
+  const [clusters, setClusters] = useState<Cluster[]>(() => {
+    // Always ensure all default clusters are present
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("clusters");
+      if (saved) {
+        const parsedClusters = JSON.parse(saved);
+        // Ensure all default clusters exist by merging them
+        const mergedClusters = defaultClusters.map((defaultCluster) => {
+          const savedCluster = parsedClusters.find(
+            (c: Cluster) => c.name === defaultCluster.name
+          );
+          return savedCluster || defaultCluster;
+        });
+        // Add any additional custom clusters
+        const customClusters = parsedClusters.filter(
+          (c: Cluster) => !defaultClusters.some((dc) => dc.name === c.name)
+        );
+        return [...mergedClusters, ...customClusters];
       }
-    },
-    deleteCluster: (cluster: Cluster) => {
-      setClusters(clusters.filter((item) => item.name !== cluster.name))
-    },
-    setCluster: (cluster: Cluster) => setCluster(cluster),
-    getExplorerUrl: (path: string) => `https://explorer.solana.com/${path}${getClusterUrlParam(cluster)}`,
-  }
-  return <Context.Provider value={value}>{children}</Context.Provider>
+    }
+    return defaultClusters;
+  });
+
+  const [cluster, setClusterState] = useState<Cluster>(() => {
+    return clusters.find((c) => c.active) || clusters[0];
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("clusters", JSON.stringify(clusters));
+    }
+  }, [clusters]);
+
+  const setCluster = (newCluster: Cluster) => {
+    setClusters(
+      clusters.map((c) => ({
+        ...c,
+        active: c.name === newCluster.name,
+      }))
+    );
+    setClusterState(newCluster);
+  };
+
+  const addCluster = (newCluster: Cluster) => {
+    setClusters([...clusters, { ...newCluster, active: false }]);
+  };
+
+  const deleteCluster = (clusterToDelete: Cluster) => {
+    // Prevent deletion of default clusters
+    if (defaultClusters.some((c) => c.name === clusterToDelete.name)) {
+      return;
+    }
+    setClusters(clusters.filter((c) => c.name !== clusterToDelete.name));
+  };
+
+  const getExplorerUrl = (path: string) => {
+    // Handle local cluster differently
+    if (cluster.network === ClusterNetwork.Localnet) {
+      return `http://localhost:3000/${path}`; // Adjust port if needed for local explorer
+    }
+
+    const endpoint =
+      cluster.network === ClusterNetwork.Mainnet
+        ? "mainnet"
+        : cluster.network?.toLowerCase() || "custom";
+    return `https://explorer.solana.com/${path}?cluster=${endpoint}`;
+  };
+
+  return (
+    <ClusterContext.Provider
+      value={{
+        clusters,
+        cluster,
+        setCluster,
+        addCluster,
+        deleteCluster,
+        getExplorerUrl,
+      }}
+    >
+      {children}
+    </ClusterContext.Provider>
+  );
 }
 
 export function useCluster() {
-  return useContext(Context)
-}
-
-function getClusterUrlParam(cluster: Cluster): string {
-  let suffix = ''
-  switch (cluster.network) {
-    case ClusterNetwork.Devnet:
-      suffix = 'devnet'
-      break
-    case ClusterNetwork.Mainnet:
-      suffix = ''
-      break
-    case ClusterNetwork.Testnet:
-      suffix = 'testnet'
-      break
-    default:
-      suffix = `custom&customUrl=${encodeURIComponent(cluster.endpoint)}`
-      break
+  const context = useContext(ClusterContext);
+  if (!context) {
+    throw new Error("useCluster must be used within ClusterProvider");
   }
-
-  return suffix.length ? `?cluster=${suffix}` : ''
+  return context;
 }
