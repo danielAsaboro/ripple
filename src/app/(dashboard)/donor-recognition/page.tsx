@@ -1,146 +1,149 @@
 // File: /app/(dashboard)/donor-recognition/page.tsx
-
+"use client";
 import React from "react";
 import Card from "@/components/common/Card";
 import Button from "@/components/common/Button";
 import { Clock } from "lucide-react";
-
-const topDonors = [
-  {
-    name: "Dara Daniel",
-    amount: 5000,
-    impactedLives: "500+",
-    badge: "Gold",
-  },
-  {
-    name: "Jane Smith",
-    amount: 3200,
-    impactedLives: "300+",
-    badge: "Silver",
-  },
-  {
-    name: "Anonymous",
-    amount: 2500,
-    impactedLives: "250+",
-    badge: "Bronze",
-  },
-];
-
-const leaderboard = [
-  {
-    rank: 1,
-    name: "Dara Daniel",
-    totalDonation: 5000,
-    impactedLives: "500+",
-  },
-  {
-    rank: 2,
-    name: "Jane Smith",
-    totalDonation: 3200,
-    impactedLives: "300+",
-  },
-  {
-    rank: 3,
-    name: "Anonymous",
-    totalDonation: 2500,
-    impactedLives: "250+",
-  },
-  {
-    rank: 4,
-    name: "David Johnson",
-    totalDonation: 1800,
-    impactedLives: "180+",
-  },
-  {
-    rank: 5,
-    name: "Maria Lukman",
-    totalDonation: 1500,
-    impactedLives: "150+",
-  },
-];
-
-const recentDonations = [
-  {
-    donor: "Jane Smith",
-    amount: 200,
-    campaign: "Medical Aid",
-    timeAgo: "2 mins ago",
-  },
-  {
-    donor: "David Johnson",
-    amount: 100,
-    campaign: "Food Relief",
-    timeAgo: "10 mins ago",
-  },
-  {
-    donor: "Anonymous",
-    amount: 500,
-    campaign: "Clean Water",
-    timeAgo: "30 mins ago",
-  },
-];
-
-const badges = [
-  {
-    name: "Dara Daniel",
-    type: "Gold Donor",
-    color: "bg-yellow-400",
-  },
-  {
-    name: "Jane Smith",
-    type: "Silver Donor",
-    color: "bg-slate-300",
-  },
-  {
-    name: "Anonymous",
-    type: "Bronze Donor",
-    color: "bg-amber-600",
-  },
-];
-
-const testimonials = [
-  {
-    message: "Thank you, John Doe, for helping us rebuild our school!",
-    author: "Amina, Beneficiary",
-  },
-  {
-    message: "Your support brought medical care to our community.",
-    author: "Dr. Ahmed, Project Lead",
-  },
-];
+import { useProgram } from "@/hooks/useProgram";
+import { useBadges } from "@/hooks/useUser/useBadges";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { findUserPDA } from "@/utils/pdas";
+import { BADGE_THRESHOLDS } from "@/utils/constants";
+import { lamportsToSol } from "@/utils/format";
+import { getBadgeTypeString } from "@/types/badge";
+import { toast } from "react-hot-toast";
 
 export default function DonorRecognitionPage() {
+  const { publicKey: authority } = useWallet();
+  const { program } = useProgram();
+  const [loading, setLoading] = React.useState(true);
+  const [leaderboard, setLeaderboard] = React.useState<any[]>([]);
+  const [recentDonations, setRecentDonations] = React.useState<any[]>([]);
+
+  // Get current user's badges
+  const userPDA = authority ? findUserPDA(authority)[0] : undefined;
+  const {
+    badges,
+    totalDonationValue,
+    loading: badgesLoading,
+  } = useBadges({ userPDA });
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      if (!program) return;
+
+      try {
+        // Fetch all users for leaderboard
+        const users = await program.account.user.all();
+        const sortedUsers = users
+          .sort(
+            (a, b) =>
+              b.account.totalDonations.toNumber() -
+              a.account.totalDonations.toNumber()
+          )
+          .slice(0, 5)
+          .map((user) => ({
+            name: user.account.name,
+            totalDonation: lamportsToSol(user.account.totalDonations),
+            impactedLives:
+              user.account.impactMetrics.mealsProvided +
+              user.account.impactMetrics.childrenEducated +
+              user.account.impactMetrics.familiesHoused,
+            walletAddress: user.account.authority.toString(),
+          }));
+
+        setLeaderboard(sortedUsers);
+
+        // Fetch recent donations
+        const recentDonationAccounts = await program.account.donation.all();
+        const recent = recentDonationAccounts
+          .sort(
+            (a, b) =>
+              b.account.timestamp.toNumber() - a.account.timestamp.toNumber()
+          )
+          .slice(0, 3)
+          .map((donation) => ({
+            donor: donation.account.donor.toString().slice(0, 4) + "...",
+            amount: lamportsToSol(donation.account.amount),
+            campaign: donation.account.campaign.toString().slice(0, 4) + "...",
+            timeAgo: getTimeAgo(donation.account.timestamp.toNumber() * 1000),
+          }));
+
+        setRecentDonations(recent);
+      } catch (error) {
+        console.error("Error fetching recognition data:", error);
+        toast.error("Failed to load recognition data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [program]);
+
+  const getTimeAgo = (timestamp: number) => {
+    const seconds = Math.floor((Date.now() - timestamp) / 1000);
+    if (seconds < 60) return "just now";
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
+  };
+
+  if (!authority) {
+    return (
+      <div className="text-center py-20">
+        <h2 className="text-2xl font-bold text-white mb-4">Connect Wallet</h2>
+        <p className="text-slate-400">
+          Please connect your wallet to view donor recognition
+        </p>
+      </div>
+    );
+  }
+
+  if (loading || badgesLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-green-400"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Top Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {topDonors.map((donor, index) => (
+        {badges.map((badge, index) => (
           <Card key={index} className="p-6">
             <div className="space-y-4">
               <div className="flex justify-between items-start">
                 <div>
                   <p className="text-sm text-slate-400">
-                    {index === 0
-                      ? "Top Donor"
-                      : index === 1
-                      ? "Second Donor"
-                      : "Third Donor"}
+                    {getBadgeTypeString(badge.badgeType)} Badge
                   </p>
-                  <h3 className="text-xl font-semibold text-white mt-1">
-                    {donor.name}
-                  </h3>
+                  <p className="text-xl font-semibold text-white mt-1">
+                    {badge.description}
+                  </p>
                 </div>
                 <div
                   className={`h-8 w-8 rounded-full ${
-                    donor.badge === "Gold"
+                    badge.badgeType.gold
                       ? "bg-yellow-400"
-                      : donor.badge === "Silver"
+                      : badge.badgeType.silver
                       ? "bg-slate-300"
-                      : "bg-amber-600"
+                      : badge.badgeType.bronze
+                      ? "bg-amber-600"
+                      : "bg-green-400"
                   }`}
                 />
               </div>
-              <p className="text-2xl font-bold text-white">${donor.amount}</p>
+              <p className="text-sm text-slate-400">
+                Earned on{" "}
+                {new Date(
+                  badge.dateEarned.toNumber() * 1000
+                ).toLocaleDateString()}
+              </p>
             </div>
           </Card>
         ))}
@@ -171,12 +174,21 @@ export default function DonorRecognitionPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700">
-                {leaderboard.map((donor) => (
-                  <tr key={donor.rank}>
-                    <td className="py-4 text-white">{donor.rank}</td>
+                {leaderboard.map((donor, index) => (
+                  <tr
+                    key={index}
+                    className={
+                      donor.walletAddress === authority.toString()
+                        ? "bg-green-400/10"
+                        : ""
+                    }
+                  >
+                    <td className="py-4 text-white">{index + 1}</td>
                     <td className="py-4 text-white">{donor.name}</td>
-                    <td className="py-4 text-white">${donor.totalDonation}</td>
-                    <td className="py-4 text-white">{donor.impactedLives}</td>
+                    <td className="py-4 text-white">
+                      ◎{donor.totalDonation.toFixed(2)}
+                    </td>
+                    <td className="py-4 text-white">{donor.impactedLives}+</td>
                   </tr>
                 ))}
               </tbody>
@@ -187,6 +199,7 @@ export default function DonorRecognitionPage() {
 
       {/* Recent Donations and Badges */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Recent Donations */}
         <Card>
           <div className="p-6">
             <h2 className="text-lg font-semibold text-white mb-4">
@@ -198,7 +211,7 @@ export default function DonorRecognitionPage() {
                   <div>
                     <p className="text-white">{donation.donor}</p>
                     <p className="text-sm text-slate-400">
-                      donated ${donation.amount} to {donation.campaign}
+                      donated ◎{donation.amount} to {donation.campaign}
                     </p>
                   </div>
                   <div className="flex items-center text-sm text-slate-400">
@@ -211,61 +224,63 @@ export default function DonorRecognitionPage() {
           </div>
         </Card>
 
+        {/* Badge Progress */}
         <Card>
           <div className="p-6">
             <h2 className="text-lg font-semibold text-white mb-4">
-              Recognition & Badges
+              Badge Progress
             </h2>
             <div className="space-y-4">
-              {badges.map((badge, idx) => (
-                <div key={idx} className="flex items-center gap-3">
-                  <div className={`h-6 w-6 rounded-full ${badge.color}`} />
-                  <div>
-                    <p className="text-white">{badge.name}</p>
-                    <p className="text-sm text-slate-400">{badge.type}</p>
+              {Object.entries(BADGE_THRESHOLDS).map(([badge, threshold]) => {
+                const progress = Math.min(
+                  (totalDonationValue / threshold) * 100,
+                  100
+                );
+                return (
+                  <div key={badge} className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-white">{badge}</span>
+                      <span className="text-slate-400">
+                        ◎{lamportsToSol(threshold)}
+                      </span>
+                    </div>
+                    <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-green-400 rounded-full transition-all"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
                   </div>
-                </div>
-              ))}
-              <div className="pt-4 border-t border-slate-700">
-                <div className="flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-full bg-green-400 flex items-center justify-center">
-                    ⭐
-                  </div>
-                  <p className="text-sm text-slate-400">
-                    Champion of Change: Earned by donating $5,000+
-                  </p>
-                </div>
-              </div>
+                );
+              })}
             </div>
           </div>
         </Card>
       </div>
 
-      {/* Thank You Notes */}
-      <Card>
-        <div className="p-6">
-          <h2 className="text-lg font-semibold text-white mb-4">
-            Thank You Notes From Beneficiaries
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {testimonials.map((testimonial, idx) => (
-              <div key={idx} className="space-y-2">
-                <p className="text-slate-300 italic">
-                  &ldquo;{testimonial.message}&rdquo;
-                </p>
-                <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-slate-700" />
-                  <p className="text-sm text-slate-400">{testimonial.author}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </Card>
-
       {/* Share Impact Button */}
       <div className="flex justify-end">
-        <Button>Share your Impact</Button>
+        <Button
+          onClick={() => {
+            const text = `I've donated ◎${lamportsToSol(
+              totalDonationValue
+            )} on Ripple and earned ${badges.length} badges!`;
+            if (navigator.share) {
+              navigator
+                .share({
+                  title: "My Impact on Ripple",
+                  text,
+                  url: window.location.origin,
+                })
+                .catch(console.error);
+            } else {
+              navigator.clipboard.writeText(text);
+              toast.success("Impact stats copied to clipboard!");
+            }
+          }}
+        >
+          Share your Impact
+        </Button>
       </div>
     </div>
   );

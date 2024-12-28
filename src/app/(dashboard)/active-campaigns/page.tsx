@@ -1,86 +1,109 @@
 // File: /app/(dashboard)/active-campaigns/page.tsx
+"use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Search } from "lucide-react";
-import CampaignCard from "@/components/dashboard/CampaignCard";
 import Button from "@/components/common/Button";
 import CampaignGrid from "@/components/campaigns/CampaignGrid";
-
-const campaigns = [
-  {
-    id: "1",
-    title: "School Kits for Kaduna",
-    organization: "Education First",
-    image: "/images/education.jpg",
-    target: 20000,
-    raised: 5000,
-    progress: 25,
-    donationsCount: 75,
-    daysRemaining: 20,
-  },
-  {
-    id: "2",
-    title: "Medical Aid for Kano",
-    organization: "Health Care Initiative",
-    image: "/images/medical.jpg",
-    target: 10000,
-    raised: 6500,
-    progress: 65,
-    donationsCount: 120,
-    daysRemaining: 7,
-  },
-  {
-    id: "3",
-    title: "Clean Water for Jos",
-    organization: "Water Access",
-    image: "/images/water.jpg",
-    target: 15000,
-    raised: 12000,
-    progress: 80,
-    donationsCount: 200,
-    daysRemaining: 10,
-  },
-  {
-    id: "4",
-    title: "Rebuild Schools in Enugu",
-    organization: "Build Nigeria",
-    image: "/images/rebuild.jpg",
-    target: 25000,
-    raised: 18000,
-    progress: 72,
-    donationsCount: 300,
-    daysRemaining: 5,
-  },
-  {
-    id: "5",
-    title: "Emergency Food Relief",
-    organization: "Food Bank Nigeria",
-    image: "/images/food.jpg",
-    target: 50000,
-    raised: 45000,
-    progress: 90,
-    donationsCount: 400,
-    daysRemaining: 2,
-    isUrgent: true,
-  },
-];
+import { useProgram } from "@/hooks/useProgram";
+import { Campaign } from "@/types";
+import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
 
 export default function CampaignsPage() {
-  // const handleDonate = (campaignId: string) => {
-  //   // Handle donation logic
-  //   console.log("Donate to campaign:", campaignId);
-  // };
+  const router = useRouter();
+  const { program } = useProgram();
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("");
 
-  // const handleShare = (campaignId: string) => {
-  //   // Handle share logic
-  //   console.log("Share campaign:", campaignId);
-  // };
+  useEffect(() => {
+    const fetchCampaigns = async () => {
+      if (!program) return;
+
+      try {
+        const allCampaigns = await program.account.campaign.all();
+        setCampaigns(allCampaigns.map((c) => c.account as Campaign));
+      } catch (error) {
+        console.error("Error fetching campaigns:", error);
+        toast.error("Failed to load campaigns");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCampaigns();
+  }, [program]);
+
+  const handleShare = (campaignId: string) => {
+    // Implement share functionality
+    const shareUrl = `${window.location.origin}/campaign/${campaignId}`;
+    if (navigator.share) {
+      navigator
+        .share({
+          title: "Check out this campaign",
+          text: "Support this important cause",
+          url: shareUrl,
+        })
+        .catch(console.error);
+    } else {
+      navigator.clipboard.writeText(shareUrl);
+      toast.success("Campaign link copied to clipboard!");
+    }
+  };
+
+  const filteredCampaigns = React.useMemo(() => {
+    let filtered = [...campaigns];
+
+    // Apply search filter
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (campaign) =>
+          campaign.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          campaign.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Apply sorting
+    switch (sortBy) {
+      case "urgent":
+        filtered.sort((a, b) => (b.isUrgent ? 1 : 0) - (a.isUrgent ? 1 : 0));
+        break;
+      case "ending-soon":
+        filtered.sort((a, b) => a.endDate.toNumber() - b.endDate.toNumber());
+        break;
+      case "most-funded":
+        filtered.sort(
+          (a, b) => b.raisedAmount.toNumber() - a.raisedAmount.toNumber()
+        );
+        break;
+      case "newest":
+        filtered.sort(
+          (a, b) => b.startDate.toNumber() - a.startDate.toNumber()
+        );
+        break;
+    }
+
+    return filtered;
+  }, [campaigns, searchTerm, sortBy]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-green-400"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-white">Active Campaigns</h1>
-        <Button>Start a Campaign</Button>
+        <Button onClick={() => router.push("/start-campaign")}>
+          Start a Campaign
+        </Button>
       </div>
 
       {/* Search and Filter */}
@@ -90,10 +113,16 @@ export default function CampaignsPage() {
           <input
             type="text"
             placeholder="Search campaigns..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-green-400"
           />
         </div>
-        <select className="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-400">
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          className="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-400"
+        >
           <option value="">Sort by</option>
           <option value="urgent">Urgent First</option>
           <option value="ending-soon">Ending Soon</option>
@@ -102,23 +131,23 @@ export default function CampaignsPage() {
         </select>
       </div>
 
-      {/* <CampaignGrid
-        campaigns={campaigns}
-        onDonate={handleDonate}
-        onShare={handleShare}
-      /> */}
-
       {/* Campaigns Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {campaigns.map((campaign) => (
-          <CampaignCard key={campaign.id} {...campaign} />
-        ))}
-      </div>
+      {filteredCampaigns.length > 0 ? (
+        <CampaignGrid campaigns={filteredCampaigns} onShare={handleShare} />
+      ) : (
+        <div className="text-center py-12">
+          <p className="text-slate-400">
+            No campaigns found matching your criteria.
+          </p>
+        </div>
+      )}
 
-      {/* Load More */}
-      <div className="flex justify-center">
-        <Button variant="outline">Load More Campaigns</Button>
-      </div>
+      {/* Load More - Implement pagination if needed */}
+      {campaigns.length > filteredCampaigns.length && (
+        <div className="flex justify-center">
+          <Button variant="outline">Load More Campaigns</Button>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,73 +1,125 @@
 // File: /app/(dashboard)/transparent-tracking/page.tsx
-
-import React from 'react';
-import Card from '@/components/common/Card';
-import Button from '@/components/common/Button';
-import { MoreVertical, Download } from 'lucide-react';
-
-const allocationCategories = [
-  {
-    category: 'Healthcare',
-    amount: 372023.75,
-    percentage: 35,
-    progress: 75,
-    status: 'Active'
-  },
-  {
-    category: 'Education',
-    amount: 265731.25,
-    percentage: 25,
-    progress: 50,
-    status: 'In Progress'
-  },
-  {
-    category: 'Food Supply',
-    amount: 159438.75,
-    percentage: 15,
-    progress: 30,
-    status: 'Active'
-  },
-  {
-    category: 'Emergency Relief',
-    amount: 106292.50,
-    percentage: 10,
-    progress: 45,
-    status: 'Active'
-  }
-];
-
-const transactionHistory = [
-  {
-    donorId: '0xABC...123',
-    amount: 2000,
-    date: '2024-12-02',
-    purpose: 'Healthcare',
-    status: 'Allocated'
-  },
-  {
-    donorId: '0xABC...123',
-    amount: 500,
-    date: '2024-12-03',
-    purpose: 'Education',
-    status: 'Allocated'
-  },
-  {
-    donorId: '0xABC...123',
-    amount: 750,
-    date: '2024-12-03',
-    purpose: 'Food Supply',
-    status: 'Spent'
-  },
-  {
-    donorId: '0xABC...123',
-    amount: 200,
-    date: '2024-12-07',
-    purpose: 'Emergency',
-    status: 'Allocated'
-  }
-];
+"use client";
+import React from "react";
+import Card from "@/components/common/Card";
+import Button from "@/components/common/Button";
+import { MoreVertical, Download } from "lucide-react";
+import { useProgram } from "@/hooks/useProgram";
+import { Campaign, Donation, CampaignStatus } from "@/types";
+import { lamportsToSol } from "@/utils/format";
+import { toast } from "react-hot-toast";
+import { BN } from "@coral-xyz/anchor";
+import _ from "lodash";
 
 export default function TransparentTrackingPage() {
+  const { program } = useProgram();
+  const [loading, setLoading] = React.useState(true);
+  const [stats, setStats] = React.useState({
+    totalFunds: new BN(0),
+    allocatedFunds: new BN(0),
+    remainingFunds: new BN(0),
+    totalDonations: 0,
+  });
+  const [allocationsByCategory, setAllocationsByCategory] = React.useState<{
+    [key: string]: {
+      amount: BN;
+      percentage: number;
+      progress: number;
+      status: CampaignStatus;
+    };
+  }>({});
+  const [transactions, setTransactions] = React.useState<Donation[]>([]);
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      if (!program) return;
+
+      try {
+        // Fetch all campaigns
+        const campaignAccounts = await program.account.campaign.all();
+        const campaigns = campaignAccounts.map((c) => c.account as Campaign);
+
+        // Fetch all donations
+        const donationAccounts = await program.account.donation.all();
+        const donations = donationAccounts.map((d) => d.account as Donation);
+
+        // Calculate total stats
+        const totalFunds = donations.reduce(
+          (sum, d) => sum.add(d.amount),
+          new BN(0)
+        );
+        const allocatedFunds = donations
+          .filter((d) => d.status.allocated)
+          .reduce((sum, d) => sum.add(d.amount), new BN(0));
+        const remainingFunds = totalFunds.sub(allocatedFunds);
+
+        // Group campaigns by category and calculate allocations
+        const groupedCampaigns = _.groupBy(
+          campaigns,
+          (c) => Object.keys(c.category)[0]
+        );
+        const allocations = Object.entries(groupedCampaigns).reduce(
+          (acc, [category, campaigns]) => {
+            const amount = campaigns.reduce(
+              (sum, c) => sum.add(c.raisedAmount),
+              new BN(0)
+            );
+            const percentage = totalFunds.gt(new BN(0))
+              ? (amount.toNumber() / totalFunds.toNumber()) * 100
+              : 0;
+            const progress =
+              campaigns.reduce(
+                (avg, c) =>
+                  avg +
+                  (c.raisedAmount.toNumber() / c.targetAmount.toNumber()) * 100,
+                0
+              ) / campaigns.length;
+
+            // Get the dominant status
+            const statuses = campaigns.map((c) => c.status);
+            const dominantStatus = _.maxBy(
+              Object.entries(_.countBy(statuses)),
+              "[1]"
+            )?.[0];
+
+            acc[category] = {
+              amount,
+              percentage,
+              progress,
+              status: dominantStatus || { active: {} },
+            };
+            return acc;
+          },
+          {} as any
+        );
+
+        setStats({
+          totalFunds,
+          allocatedFunds,
+          remainingFunds,
+          totalDonations: donations.length,
+        });
+        setAllocationsByCategory(allocations);
+        setTransactions(donations.slice(0, 10)); // Last 10 transactions
+      } catch (error) {
+        console.error("Error fetching tracking data:", error);
+        toast.error("Failed to load tracking data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [program]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-green-400"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Overview Stats */}
@@ -76,8 +128,12 @@ export default function TransparentTrackingPage() {
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-sm text-slate-400">Total Funds Received</h3>
-              <p className="text-2xl font-bold text-white mt-2">$1,250,500</p>
-              <p className="text-sm text-slate-400 mt-1">3,240 Donations</p>
+              <p className="text-2xl font-bold text-white mt-2">
+                ◎{lamportsToSol(stats.totalFunds)}
+              </p>
+              <p className="text-sm text-slate-400 mt-1">
+                {stats.totalDonations} Donations
+              </p>
             </div>
             <button className="text-slate-400 hover:text-slate-300">
               <MoreVertical className="h-5 w-5" />
@@ -89,8 +145,12 @@ export default function TransparentTrackingPage() {
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-sm text-slate-400">Allocated Funds</h3>
-              <p className="text-2xl font-bold text-white mt-2">$1,062,925</p>
-              <p className="text-sm text-slate-400 mt-1">3,240 Donations</p>
+              <p className="text-2xl font-bold text-white mt-2">
+                ◎{lamportsToSol(stats.allocatedFunds)}
+              </p>
+              <p className="text-sm text-slate-400 mt-1">
+                {Object.keys(allocationsByCategory).length} Categories
+              </p>
             </div>
             <button className="text-slate-400 hover:text-slate-300">
               <MoreVertical className="h-5 w-5" />
@@ -102,8 +162,17 @@ export default function TransparentTrackingPage() {
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-sm text-slate-400">Remaining Funds</h3>
-              <p className="text-2xl font-bold text-white mt-2">$187,575</p>
-              <p className="text-sm text-slate-400 mt-1">15% Unallocated</p>
+              <p className="text-2xl font-bold text-white mt-2">
+                ◎{lamportsToSol(stats.remainingFunds)}
+              </p>
+              <p className="text-sm text-slate-400 mt-1">
+                {(
+                  (stats.remainingFunds.toNumber() /
+                    stats.totalFunds.toNumber()) *
+                  100
+                ).toFixed(1)}
+                % Unallocated
+              </p>
             </div>
             <button className="text-slate-400 hover:text-slate-300">
               <MoreVertical className="h-5 w-5" />
@@ -115,8 +184,37 @@ export default function TransparentTrackingPage() {
       {/* Fund Allocation Table */}
       <Card className="p-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-lg font-semibold text-white">Total Funds Received</h2>
-          <Button variant="outline" className="gap-2">
+          <h2 className="text-lg font-semibold text-white">Fund Allocation</h2>
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => {
+              // Generate CSV data
+              const csvContent =
+                `Category,Amount,Percentage,Progress\n` +
+                Object.entries(allocationsByCategory)
+                  .map(
+                    ([category, data]) =>
+                      `${category},${lamportsToSol(
+                        data.amount
+                      )},${data.percentage.toFixed(1)}%,${data.progress.toFixed(
+                        1
+                      )}%`
+                  )
+                  .join("\n");
+
+              // Create download link
+              const blob = new Blob([csvContent], { type: "text/csv" });
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = "fund-allocation.csv";
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              window.URL.revokeObjectURL(url);
+            }}
+          >
             <Download className="h-4 w-4" />
             Download Report
           </Button>
@@ -125,28 +223,62 @@ export default function TransparentTrackingPage() {
           <table className="w-full">
             <thead className="bg-slate-800">
               <tr>
-                <th className="text-left text-sm font-medium text-slate-400 p-4">Allocation Category</th>
-                <th className="text-left text-sm font-medium text-slate-400 p-4">Amount Allocated</th>
-                <th className="text-left text-sm font-medium text-slate-400 p-4">Percentage</th>
-                <th className="text-left text-sm font-medium text-slate-400 p-4">Progress</th>
+                <th className="text-left text-sm font-medium text-slate-400 p-4">
+                  Category
+                </th>
+                <th className="text-left text-sm font-medium text-slate-400 p-4">
+                  Amount Allocated
+                </th>
+                <th className="text-left text-sm font-medium text-slate-400 p-4">
+                  Percentage
+                </th>
+                <th className="text-left text-sm font-medium text-slate-400 p-4">
+                  Progress
+                </th>
+                <th className="text-left text-sm font-medium text-slate-400 p-4">
+                  Status
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700">
-              {allocationCategories.map((item) => (
-                <tr key={item.category}>
-                  <td className="p-4 text-white">{item.category}</td>
-                  <td className="p-4 text-white">${item.amount.toLocaleString()}</td>
-                  <td className="p-4 text-white">{item.percentage}%</td>
+              {Object.entries(allocationsByCategory).map(([category, data]) => (
+                <tr key={category}>
+                  <td className="p-4 text-white capitalize">
+                    {category.replace(/([A-Z])/g, " $1").trim()}
+                  </td>
+                  <td className="p-4 text-white">
+                    ◎{lamportsToSol(data.amount)}
+                  </td>
+                  <td className="p-4 text-white">
+                    {data.percentage.toFixed(1)}%
+                  </td>
                   <td className="p-4">
                     <div className="flex items-center gap-4">
                       <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
-                        <div 
+                        <div
                           className="h-full bg-green-400 rounded-full"
-                          style={{ width: `${item.progress}%` }}
+                          style={{ width: `${data.progress}%` }}
                         />
                       </div>
-                      <span className="text-white min-w-[40px]">{item.progress}%</span>
+                      <span className="text-white min-w-[40px]">
+                        {data.progress.toFixed(0)}%
+                      </span>
                     </div>
+                  </td>
+                  <td className="p-4">
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs ${
+                        Object.keys(data.status)[0] === "completed"
+                          ? "bg-green-400/10 text-green-400"
+                          : Object.keys(data.status)[0] === "active"
+                          ? "bg-blue-400/10 text-blue-400"
+                          : "bg-yellow-400/10 text-yellow-400"
+                      }`}
+                    >
+                      {Object.keys(data.status)[0]
+                        .replace(/([A-Z])/g, " $1")
+                        .trim()}
+                    </span>
                   </td>
                 </tr>
               ))}
@@ -155,66 +287,66 @@ export default function TransparentTrackingPage() {
         </div>
       </Card>
 
-      {/* Project Progress */}
-      <Card className="p-6">
-        <h2 className="text-lg font-semibold text-white mb-6">Project Progress</h2>
-        <div className="space-y-6">
-          {allocationCategories.map((project) => (
-            <div key={project.category} className="space-y-2">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="text-white font-medium">{project.category} Project</h3>
-                  <p className="text-sm text-slate-400">Total Funds: ${project.amount.toLocaleString()}</p>
-                </div>
-                <span className={`px-2 py-1 rounded-full text-xs ${
-                  project.status === 'Active' 
-                    ? 'bg-green-400/10 text-green-400' 
-                    : 'bg-yellow-400/10 text-yellow-400'
-                }`}>
-                  {project.status}
-                </span>
-              </div>
-              <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-green-400 rounded-full"
-                  style={{ width: `${project.progress}%` }}
-                />
-              </div>
-              <p className="text-sm text-slate-400">Progress: {project.progress}%</p>
-            </div>
-          ))}
-        </div>
-      </Card>
-
       {/* Transaction History */}
       <Card className="p-6">
-        <h2 className="text-lg font-semibold text-white mb-6">Transaction History</h2>
+        <h2 className="text-lg font-semibold text-white mb-6">
+          Recent Transactions
+        </h2>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-slate-800">
               <tr>
-                <th className="text-left text-sm font-medium text-slate-400 p-4">Donor ID</th>
-                <th className="text-left text-sm font-medium text-slate-400 p-4">Amount</th>
-                <th className="text-left text-sm font-medium text-slate-400 p-4">Date</th>
-                <th className="text-left text-sm font-medium text-slate-400 p-4">Purpose</th>
-                <th className="text-left text-sm font-medium text-slate-400 p-4">Status</th>
+                <th className="text-left text-sm font-medium text-slate-400 p-4">
+                  Donor
+                </th>
+                <th className="text-left text-sm font-medium text-slate-400 p-4">
+                  Amount
+                </th>
+                <th className="text-left text-sm font-medium text-slate-400 p-4">
+                  Date
+                </th>
+                <th className="text-left text-sm font-medium text-slate-400 p-4">
+                  Status
+                </th>
+                <th className="text-left text-sm font-medium text-slate-400 p-4">
+                  Payment Method
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700">
-              {transactionHistory.map((transaction, idx) => (
+              {transactions.map((tx, idx) => (
                 <tr key={idx}>
-                  <td className="p-4 text-white">{transaction.donorId}</td>
-                  <td className="p-4 text-white">${transaction.amount}</td>
-                  <td className="p-4 text-white">{transaction.date}</td>
-                  <td className="p-4 text-white">{transaction.purpose}</td>
+                  <td className="p-4 text-white">
+                    {tx.donor.toString().slice(0, 4)}...
+                    {tx.donor.toString().slice(-4)}
+                  </td>
+                  <td className="p-4 text-white">
+                    ◎{lamportsToSol(tx.amount)}
+                  </td>
+                  <td className="p-4 text-white">
+                    {new Date(
+                      tx.timestamp.toNumber() * 1000
+                    ).toLocaleDateString()}
+                  </td>
                   <td className="p-4">
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      transaction.status === 'Allocated' 
-                        ? 'bg-green-400/10 text-green-400' 
-                        : 'bg-blue-400/10 text-blue-400'
-                    }`}>
-                      {transaction.status}
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs ${
+                        Object.keys(tx.status)[0] === "completed"
+                          ? "bg-green-400/10 text-green-400"
+                          : Object.keys(tx.status)[0] === "pending"
+                          ? "bg-yellow-400/10 text-yellow-400"
+                          : "bg-blue-400/10 text-blue-400"
+                      }`}
+                    >
+                      {Object.keys(tx.status)[0]
+                        .replace(/([A-Z])/g, " $1")
+                        .trim()}
                     </span>
+                  </td>
+                  <td className="p-4 text-white capitalize">
+                    {Object.keys(tx.paymentMethod)[0]
+                      .replace(/([A-Z])/g, " $1")
+                      .trim()}
                   </td>
                 </tr>
               ))}

@@ -1,135 +1,156 @@
 // File: /app/(dashboard)/impact-stories/page.tsx
-
+"use client";
 import React from "react";
 import StatusCard from "@/components/dashboard/StatusCard";
 import Card from "@/components/common/Card";
 import Button from "@/components/common/Button";
-
-const impactMetrics = {
-  totalLives: "25,000+",
-  projectsCompleted: "50+",
-  communitiesReached: "120+",
-};
-
-const projectMilestones = [
-  {
-    title: "Healthcare Outreach",
-    achievement: "Achieved 90% of medical aid goal.",
-    details: "Treated 200 out of 220 targeted patients",
-  },
-  {
-    title: "Food Distribution",
-    achievement: "Achieved 75% of supply goal.",
-    details: "Delivered 3,750 out of 5,000 meals",
-  },
-];
-
-const successStories = [
-  {
-    id: "1",
-    title: "Building a Future for Amina",
-    impact: "150 school kits provided in Kano",
-    quote: "I can now attend school every day without worries...",
-    image: "/images/success-1.jpg",
-  },
-  {
-    id: "2",
-    title: "Medical Aid in Rural Areas",
-    impact: "Healthcare access provided to 500 families",
-    quote: "Access to care changed everything for my family...",
-    image: "/images/success-2.jpg",
-  },
-];
-
-const testimonials = [
-  {
-    quote: "This project gave me hope again. Thank you so much!",
-    author: "Maryam, Beneficiary",
-  },
-  {
-    quote: "We have witnessed lives changing through this platform.",
-    author: "Dr. Ali, Project Lead",
-  },
-];
+import { useProgram } from "@/hooks/useProgram";
+import { Campaign } from "@/types";
+import { lamportsToSol } from "@/utils/format";
+import { toast } from "react-hot-toast";
 
 export default function ImpactStoriesPage() {
+  const { program } = useProgram();
+  const [loading, setLoading] = React.useState(true);
+  const [impactMetrics, setImpactMetrics] = React.useState({
+    totalLives: 0,
+    projectsCompleted: 0,
+    communitiesReached: 0,
+  });
+  const [successStories, setSuccessStories] = React.useState<Campaign[]>([]);
+  const [projectProgress, setProjectProgress] = React.useState<{
+    [key: string]: {
+      title: string;
+      achievement: string;
+      details: string;
+    };
+  }>({});
+
+  React.useEffect(() => {
+    const fetchImpactData = async () => {
+      if (!program) return;
+
+      try {
+        // Fetch all completed campaigns
+        const campaigns = await program.account.campaign.all([
+          {
+            memcmp: {
+              offset: 8 + 32 + 8 + 8, // After discriminator, authority, title length, and description length
+              bytes: "completed", // Filter for completed campaigns
+            },
+          },
+        ]);
+
+        const completedCampaigns = campaigns.map((c) => c.account as Campaign);
+
+        // Calculate total impact
+        const totalRaised = completedCampaigns.reduce(
+          (sum, c) => sum + c.raisedAmount.toNumber(),
+          0
+        );
+
+        // Get top success stories
+        const stories = completedCampaigns
+          .sort((a, b) => b.raisedAmount.toNumber() - a.raisedAmount.toNumber())
+          .slice(0, 4);
+
+        // Calculate progress for ongoing projects
+        const ongoingCampaigns = (
+          await program.account.campaign.all([
+            {
+              memcmp: {
+                offset: 8 + 32 + 8 + 8,
+                bytes: "inProgress",
+              },
+            },
+          ])
+        ).map((c) => c.account as Campaign);
+
+        const progress = ongoingCampaigns.reduce((acc, campaign) => {
+          const progress =
+            (campaign.raisedAmount.toNumber() /
+              campaign.targetAmount.toNumber()) *
+            100;
+          acc[campaign.title] = {
+            title: campaign.title,
+            achievement: `Achieved ${progress.toFixed(0)}% of ${
+              campaign.category
+            } goal`,
+            details: `Raised ◎${lamportsToSol(campaign.raisedAmount)} from ${
+              campaign.donorsCount
+            } donors`,
+          };
+          return acc;
+        }, {} as any);
+
+        setImpactMetrics({
+          totalLives: Math.floor(lamportsToSol(totalRaised) * 10), // Estimate: 10 lives per SOL
+          projectsCompleted: completedCampaigns.length,
+          communitiesReached: new Set(
+            completedCampaigns.map((c) => c.organizationName)
+          ).size,
+        });
+
+        setSuccessStories(stories);
+        setProjectProgress(progress);
+      } catch (error) {
+        console.error("Error fetching impact data:", error);
+        toast.error("Failed to load impact data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchImpactData();
+  }, [program]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-green-400"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Impact Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatusCard
           title="Total Lives Impacted"
-          value={impactMetrics.totalLives}
-          //   subtitle="Lives"
+          value={`${impactMetrics.totalLives.toLocaleString()}+`}
         />
         <StatusCard
           title="Projects Completed"
-          value={impactMetrics.projectsCompleted}
-          //   subtitle="Completed Across Sectors"
+          value={`${impactMetrics.projectsCompleted}+`}
         />
         <StatusCard
           title="Communities Reached"
-          value={impactMetrics.communitiesReached}
-          //   subtitle="Communities"
+          value={`${impactMetrics.communitiesReached}+`}
         />
       </div>
-
-      {/* Impact Visualization */}
-      <Card>
-        <div className="p-6">
-          <h2 className="text-lg font-semibold text-white mb-4">
-            Impact Visualization
-          </h2>
-          <div className="space-y-4">
-            {["Healthcare", "Education", "Food Supply"].map((category) => (
-              <div key={category} className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">{category}</span>
-                  <span className="text-white">12,000 Lives</span>
-                </div>
-                <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-green-400 rounded-full"
-                    style={{ width: "35%" }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </Card>
-
-      {/* Project Milestones */}
-      <Card>
-        <div className="p-6">
-          <h2 className="text-lg font-semibold text-white mb-4">
-            Project Milestones
-          </h2>
-          <div className="space-y-6">
-            {projectMilestones.map((milestone, idx) => (
-              <div key={idx} className="space-y-2">
-                <h3 className="text-white font-medium">{milestone.title}</h3>
-                <p className="text-green-400">{milestone.achievement}</p>
-                <p className="text-sm text-slate-400">{milestone.details}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </Card>
 
       {/* Success Stories */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {successStories.map((story) => (
-          <Card key={story.id}>
+          <Card key={story.title}>
             <div className="p-6 space-y-4">
               <h3 className="text-xl font-semibold text-white">
                 {story.title}
               </h3>
-              <p className="text-slate-400">Impact: {story.impact}</p>
-              <p className="text-slate-300 italic">
-                &ldquo;{story.quote}&rdquo;
+              <p className="text-slate-400">
+                Impact: ◎{lamportsToSol(story.raisedAmount)} raised from{" "}
+                {story.donorsCount} donors
               </p>
-              <Button variant="outline" className="w-full">
+              <p className="text-slate-300">{story.description}</p>
+              <p className="text-green-400">By {story.organizationName}</p>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  window.location.href = `/campaign/${story.title}`;
+                }}
+              >
                 View Full Story
               </Button>
             </div>
@@ -137,24 +158,70 @@ export default function ImpactStoriesPage() {
         ))}
       </div>
 
+      {/* Project Progress */}
+      <Card>
+        <div className="p-6">
+          <h2 className="text-lg font-semibold text-white mb-4">
+            Project Progress
+          </h2>
+          <div className="space-y-6">
+            {Object.values(projectProgress).map((project) => (
+              <div key={project.title} className="space-y-2">
+                <h3 className="text-white font-medium">{project.title}</h3>
+                <p className="text-green-400">{project.achievement}</p>
+                <p className="text-sm text-slate-400">{project.details}</p>
+              </div>
+            ))}
+            {Object.keys(projectProgress).length === 0 && (
+              <p className="text-slate-400">No active projects</p>
+            )}
+          </div>
+        </div>
+      </Card>
+
       {/* Testimonials */}
       <Card>
         <div className="p-6">
           <h2 className="text-lg font-semibold text-white mb-4">
-            Testimonials
+            Community Impact
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {testimonials.map((testimonial, idx) => (
-              <div key={idx} className="space-y-2">
-                <p className="text-slate-300 italic">
-                  &ldquo;{testimonial.quote}&rdquo;
+            {successStories.slice(0, 2).map((story) => (
+              <div key={story.title} className="space-y-2">
+                <p className="text-slate-300 italic">&quot;{story.description}&quot;</p>
+                <p className="text-sm text-slate-400">
+                  - {story.organizationName}
                 </p>
-                <p className="text-sm text-slate-400">- {testimonial.author}</p>
+                <p className="text-sm text-green-400">
+                  ◎{lamportsToSol(story.raisedAmount)} raised
+                </p>
               </div>
             ))}
           </div>
         </div>
       </Card>
+
+      {/* Call to Action */}
+      <div className="text-center py-8">
+        <h3 className="text-xl font-semibold text-white mb-4">
+          Be Part of Our Impact Story
+        </h3>
+        <p className="text-slate-400 mb-6">
+          Join us in making a difference. Start your own campaign or support
+          existing ones.
+        </p>
+        <div className="flex justify-center gap-4">
+          <Button onClick={() => (window.location.href = "/start-campaign")}>
+            Start a Campaign
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => (window.location.href = "/active-campaigns")}
+          >
+            Support a Campaign
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

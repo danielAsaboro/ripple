@@ -4,6 +4,7 @@ import React from "react";
 import DonateCTA from "@/components/landing/DonateCTA";
 import Footer from "@/components/common/Navigation/Footer";
 import TopNavBar from "@/components/common/Navigation/TopNavBar";
+import Image from "next/image";
 
 // Ripple Component
 const RippleBackground = () => {
@@ -105,13 +106,15 @@ export default function AboutPage() {
   );
 }
 
-export function ProfileCard() {
+function ProfileCard() {
   return (
     <div className="flex items-center space-x-4 p-6 mt-8 rounded-lg bg-slate-700/50">
-      <img
+      <Image
         src="/api/placeholder/112/112"
         alt="Ivy Zion"
         className="w-28 h-28 rounded-full border-2 border-gray-400"
+        width={28}
+        height={28}
       />
       <div className="handwritten">
         <h3 className="text-lg font-semibold text-white">Ivy Zion</h3>

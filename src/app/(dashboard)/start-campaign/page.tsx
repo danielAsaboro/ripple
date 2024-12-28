@@ -1,18 +1,26 @@
-// File: /app/(dashboard)/start-campaign/page.tsx
+//File: /app/(dashboard)/start-campaign/page.tsx
 "use client";
-import React from "react";
+
+import { withAuth } from "@/components/auth";
+import { UserRole } from "@/services/auth";
 import CampaignForm from "@/components/campaigns/CampaignForm";
-import type { CampaignFormDataF } from "@/types/campaign";
+import { useCreateCampaign } from "@/hooks/useCampaign";
+import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
 
-export default function StartCampaignPage() {
-  const handleSubmit = (data: CampaignFormDataF) => {
-    // Handle form submission
-    console.log("Form submitted:", data);
-  };
+const StartCampaignPage = () => {
+  const router = useRouter();
+  const { createCampaign } = useCreateCampaign();
 
-  const handlePreview = () => {
-    // Handle campaign preview
-    console.log("Preview campaign");
+  const handleSubmit = async (data: any) => {
+    try {
+      await createCampaign(data);
+      toast.success("Campaign created successfully!");
+      router.push("/active-campaigns");
+    } catch (error) {
+      console.error("Error creating campaign:", error);
+      toast.error("Failed to create campaign");
+    }
   };
 
   return (
@@ -24,7 +32,13 @@ export default function StartCampaignPage() {
         </p>
       </div>
 
-      <CampaignForm onSubmit={handleSubmit} onPreview={handlePreview} />
+      <CampaignForm onSubmit={handleSubmit} />
     </div>
   );
-}
+};
+
+// Export with auth protection
+export default withAuth(StartCampaignPage, {
+  roles: [UserRole.CAMPAIGN_CREATOR],
+  requireInit: true,
+});
