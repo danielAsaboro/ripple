@@ -1,0 +1,1042 @@
+{
+  "address": "BHhjYYFgpQjUDx4RL7ge923gZeJ3vyQScHBwYDCFSkd7",
+  "metadata": {
+    "name": "ripple",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "create_campaign",
+      "discriminator": [111, 131, 187, 98, 160, 193, 114, 244],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "user",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [117, 115, 101, 114]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "campaign",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [99, 97, 109, 112, 97, 105, 103, 110]
+              },
+              {
+                "kind": "arg",
+                "path": "title"
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "title",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "category",
+          "type": {
+            "defined": {
+              "name": "CampaignCategory"
+            }
+          }
+        },
+        {
+          "name": "organization_name",
+          "type": "string"
+        },
+        {
+          "name": "target_amount",
+          "type": "u64"
+        },
+        {
+          "name": "start_date",
+          "type": "i64"
+        },
+        {
+          "name": "end_date",
+          "type": "i64"
+        },
+        {
+          "name": "image_url",
+          "type": "string"
+        },
+        {
+          "name": "is_urgent",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "donate",
+      "discriminator": [121, 186, 218, 211, 73, 70, 196, 180],
+      "accounts": [
+        {
+          "name": "donor",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "user",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [117, 115, 101, 114]
+              },
+              {
+                "kind": "account",
+                "path": "donor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "campaign",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [99, 97, 109, 112, 97, 105, 103, 110]
+              },
+              {
+                "kind": "account",
+                "path": "campaign.title",
+                "account": "Campaign"
+              },
+              {
+                "kind": "account",
+                "path": "campaign.authority",
+                "account": "Campaign"
+              }
+            ]
+          }
+        },
+        {
+          "name": "donation",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [100, 111, 110, 97, 116, 105, 111, 110]
+              },
+              {
+                "kind": "account",
+                "path": "campaign"
+              },
+              {
+                "kind": "account",
+                "path": "donor"
+              },
+              {
+                "kind": "arg",
+                "path": "count_in_string"
+              }
+            ]
+          }
+        },
+        {
+          "name": "campaign_vault",
+          "docs": [
+            "The seeds and constraints ensure it is the correct vault for this campaign."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [99, 97, 109, 112, 97, 105, 103, 110]
+              },
+              {
+                "kind": "account",
+                "path": "campaign.title",
+                "account": "Campaign"
+              },
+              {
+                "kind": "account",
+                "path": "campaign.authority",
+                "account": "Campaign"
+              },
+              {
+                "kind": "const",
+                "value": [118, 97, 117, 108, 116]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "payment_method",
+          "type": {
+            "defined": {
+              "name": "PaymentMethod"
+            }
+          }
+        },
+        {
+          "name": "count_in_string",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "initialize",
+      "discriminator": [175, 175, 109, 31, 13, 152, 155, 237],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "user",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [117, 115, 101, 114]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "update_campaign",
+      "discriminator": [235, 31, 39, 49, 121, 173, 19, 92],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "campaign",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [99, 97, 109, 112, 97, 105, 103, 110]
+              },
+              {
+                "kind": "account",
+                "path": "campaign.title",
+                "account": "Campaign"
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "UpdateCampaignParams"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "withdraw_funds",
+      "discriminator": [241, 36, 29, 111, 208, 31, 104, 217],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "campaign",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [99, 97, 109, 112, 97, 105, 103, 110]
+              },
+              {
+                "kind": "account",
+                "path": "campaign.title",
+                "account": "Campaign"
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "campaign_vault",
+          "docs": [
+            "The seeds and constraints ensure it is the correct vault for this campaign, and only the",
+            "campaign authority can withdraw from it when the campaign is completed."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [99, 97, 109, 112, 97, 105, 103, 110]
+              },
+              {
+                "kind": "account",
+                "path": "campaign.title",
+                "account": "Campaign"
+              },
+              {
+                "kind": "account",
+                "path": "campaign.authority",
+                "account": "Campaign"
+              },
+              {
+                "kind": "const",
+                "value": [118, 97, 117, 108, 116]
+              }
+            ]
+          }
+        },
+        {
+          "name": "recipient",
+          "docs": [
+            "It can be any valid system account as specified by the campaign authority."
+          ],
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Campaign",
+      "discriminator": [50, 40, 49, 11, 157, 220, 229, 192]
+    },
+    {
+      "name": "Donation",
+      "discriminator": [189, 210, 54, 77, 216, 85, 7, 68]
+    },
+    {
+      "name": "User",
+      "discriminator": [159, 117, 95, 227, 239, 151, 58, 236]
+    }
+  ],
+  "events": [
+    {
+      "name": "BadgeAwarded",
+      "discriminator": [153, 87, 158, 115, 220, 200, 52, 1]
+    },
+    {
+      "name": "CampaignCreated",
+      "discriminator": [9, 98, 69, 61, 53, 131, 64, 152]
+    },
+    {
+      "name": "CampaignUpdated",
+      "discriminator": [110, 209, 206, 190, 205, 2, 234, 81]
+    },
+    {
+      "name": "DonationReceived",
+      "discriminator": [160, 135, 32, 7, 241, 105, 91, 158]
+    },
+    {
+      "name": "FundsWithdrawn",
+      "discriminator": [56, 130, 230, 154, 35, 92, 11, 118]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "TitleTooLong",
+      "msg": "The provided title is too long"
+    },
+    {
+      "code": 6001,
+      "name": "DescriptionTooLong",
+      "msg": "The provided description is too long"
+    },
+    {
+      "code": 6002,
+      "name": "OrganizationNameTooLong",
+      "msg": "The provided organization name is too long"
+    },
+    {
+      "code": 6003,
+      "name": "ImageUrlTooLong",
+      "msg": "The provided image URL is too long"
+    },
+    {
+      "code": 6004,
+      "name": "CampaignDurationTooShort",
+      "msg": "Campaign duration is too short"
+    },
+    {
+      "code": 6005,
+      "name": "CampaignDurationTooLong",
+      "msg": "Campaign duration is too long"
+    },
+    {
+      "code": 6006,
+      "name": "TargetAmountTooLow",
+      "msg": "Campaign target amount is too low"
+    },
+    {
+      "code": 6007,
+      "name": "CampaignEnded",
+      "msg": "Campaign has already ended"
+    },
+    {
+      "code": 6008,
+      "name": "CampaignNotActive",
+      "msg": "Campaign is not active"
+    },
+    {
+      "code": 6009,
+      "name": "DonationTooLow",
+      "msg": "Donation amount is too low"
+    },
+    {
+      "code": 6010,
+      "name": "InvalidAuthority",
+      "msg": "Invalid authority"
+    },
+    {
+      "code": 6011,
+      "name": "InvalidStatusTransition",
+      "msg": "Invalid campaign status transition"
+    },
+    {
+      "code": 6012,
+      "name": "InsufficientFunds",
+      "msg": "Insufficient funds"
+    },
+    {
+      "code": 6013,
+      "name": "NameTooLong",
+      "msg": "Maximum name length exceeded"
+    },
+    {
+      "code": 6014,
+      "name": "EmailTooLong",
+      "msg": "Maximum email length exceeded"
+    },
+    {
+      "code": 6015,
+      "name": "InvalidEmailFormat",
+      "msg": "Invalid email format"
+    },
+    {
+      "code": 6016,
+      "name": "TransactionHashTooLong",
+      "msg": "Maximum transaction hash length exceeded"
+    },
+    {
+      "code": 6017,
+      "name": "ImpactDescriptionTooLong",
+      "msg": "Maximum impact description length exceeded"
+    },
+    {
+      "code": 6018,
+      "name": "MaxBadgesReached",
+      "msg": "Maximum number of badges reached"
+    }
+  ],
+  "types": [
+    {
+      "name": "Badge",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "badge_type",
+            "type": {
+              "defined": {
+                "name": "BadgeType"
+              }
+            }
+          },
+          {
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "name": "image_url",
+            "type": "string"
+          },
+          {
+            "name": "date_earned",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BadgeAwarded",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "badge_type",
+            "type": {
+              "defined": {
+                "name": "BadgeType"
+              }
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BadgeType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Gold"
+          },
+          {
+            "name": "Silver"
+          },
+          {
+            "name": "Bronze"
+          },
+          {
+            "name": "ChampionOfChange"
+          },
+          {
+            "name": "SustainedSupporter"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Campaign",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "title",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "name": "category",
+            "type": {
+              "defined": {
+                "name": "CampaignCategory"
+              }
+            }
+          },
+          {
+            "name": "organization_name",
+            "type": "string"
+          },
+          {
+            "name": "target_amount",
+            "type": "u64"
+          },
+          {
+            "name": "raised_amount",
+            "type": "u64"
+          },
+          {
+            "name": "donors_count",
+            "type": "u32"
+          },
+          {
+            "name": "start_date",
+            "type": "i64"
+          },
+          {
+            "name": "end_date",
+            "type": "i64"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "CampaignStatus"
+              }
+            }
+          },
+          {
+            "name": "image_url",
+            "type": "string"
+          },
+          {
+            "name": "is_urgent",
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CampaignCategory",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Healthcare"
+          },
+          {
+            "name": "Education"
+          },
+          {
+            "name": "FoodSupply"
+          },
+          {
+            "name": "EmergencyRelief"
+          },
+          {
+            "name": "Infrastructure"
+          },
+          {
+            "name": "WaterSanitation"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CampaignCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "campaign",
+            "type": "pubkey"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "title",
+            "type": "string"
+          },
+          {
+            "name": "category",
+            "type": {
+              "defined": {
+                "name": "CampaignCategory"
+              }
+            }
+          },
+          {
+            "name": "target_amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CampaignStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Active"
+          },
+          {
+            "name": "InProgress"
+          },
+          {
+            "name": "Completed"
+          },
+          {
+            "name": "Expired"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CampaignUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "campaign",
+            "type": "pubkey"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_status",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "CampaignStatus"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Donation",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "donor",
+            "type": "pubkey"
+          },
+          {
+            "name": "campaign",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "DonationStatus"
+              }
+            }
+          },
+          {
+            "name": "payment_method",
+            "type": {
+              "defined": {
+                "name": "PaymentMethod"
+              }
+            }
+          },
+          {
+            "name": "transaction_hash",
+            "type": "string"
+          },
+          {
+            "name": "impact_description",
+            "type": "string"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DonationReceived",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "donation",
+            "type": "pubkey"
+          },
+          {
+            "name": "campaign",
+            "type": "pubkey"
+          },
+          {
+            "name": "donor",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "payment_method",
+            "type": {
+              "defined": {
+                "name": "PaymentMethod"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "DonationStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Pending"
+          },
+          {
+            "name": "Completed"
+          },
+          {
+            "name": "Allocated"
+          },
+          {
+            "name": "Spent"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FundsWithdrawn",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "campaign",
+            "type": "pubkey"
+          },
+          {
+            "name": "recipient",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ImpactMetrics",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "meals_provided",
+            "type": "u32"
+          },
+          {
+            "name": "children_educated",
+            "type": "u32"
+          },
+          {
+            "name": "families_housed",
+            "type": "u32"
+          },
+          {
+            "name": "trees_planted",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PaymentMethod",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "CryptoWallet"
+          },
+          {
+            "name": "Card"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateCampaignParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "description",
+            "type": {
+              "option": "string"
+            }
+          },
+          {
+            "name": "image_url",
+            "type": {
+              "option": "string"
+            }
+          },
+          {
+            "name": "end_date",
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "CampaignStatus"
+                }
+              }
+            }
+          },
+          {
+            "name": "is_urgent",
+            "type": {
+              "option": "bool"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "User",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "wallet_address",
+            "type": "pubkey"
+          },
+          {
+            "name": "email",
+            "type": "string"
+          },
+          {
+            "name": "avatar_url",
+            "type": "string"
+          },
+          {
+            "name": "total_donations",
+            "type": "u64"
+          },
+          {
+            "name": "campaigns_supported",
+            "type": "u32"
+          },
+          {
+            "name": "impact_metrics",
+            "type": {
+              "defined": {
+                "name": "ImpactMetrics"
+              }
+            }
+          },
+          {
+            "name": "badges",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "Badge"
+                }
+              }
+            }
+          },
+          {
+            "name": "rank",
+            "type": "u32"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}
