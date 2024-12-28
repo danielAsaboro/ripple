@@ -28,6 +28,7 @@
     "jotai": "^2.9.1",
     "lucide-react": "^0.469.0",
     "next": "14.2.5",
+    "pino-pretty": "^13.0.0",
     "react": "^18",
     "react-dom": "^18",
     "react-hot-toast": "^2.4.1",
