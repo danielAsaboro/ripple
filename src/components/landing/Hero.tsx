@@ -2,40 +2,12 @@
 
 import React from "react";
 import Button from "@/components/common/Button";
-import Image from "next/image";
+import TopNavBar from "../common/Navigation/TopNavBar";
 
 const Hero = () => {
   return (
     <div className="relative flex min-h-[600px] w-full flex-col items-center justify-center bg-slate-900 px-4 py-20 text-center">
-      <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Image
-            src="/logo.svg"
-            alt="Rippl"
-            className="h-8 w-8"
-            width={8}
-            height={8}
-          />
-          <span className="text-xl font-bold text-white">Rippl</span>
-        </div>
-        <nav className="hidden md:flex items-center space-x-8 text-slate-200">
-          <a href="#" className="hover:text-green-400">
-            Home
-          </a>
-          <a href="#" className="hover:text-green-400">
-            About
-          </a>
-          <a href="#" className="hover:text-green-400">
-            How It Works
-          </a>
-          <a href="#" className="hover:text-green-400">
-            Track Donation
-          </a>
-        </nav>
-        <Button variant="outline" className="hidden md:inline-flex">
-          Create Account
-        </Button>
-      </div>
+      <TopNavBar />
 
       <div className="max-w-4xl space-y-6 pt-16">
         <span className="inline-block rounded-full bg-slate-800 px-4 py-1.5 text-sm text-green-400">
