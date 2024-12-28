@@ -24,22 +24,22 @@ export default function Footer() {
             <h3 className="text-white font-semibold mb-4">Company</h3>
             <ul className="space-y-2 text-slate-400">
               <li>
-                <a href="#" className="hover:text-green-400">
+                <a href="/" className="hover:text-green-400">
                   Home
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-green-400">
+                <a href="/about" className="hover:text-green-400">
                   About Us
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-green-400">
+                <a href="/process" className="hover:text-green-400">
                   How It Works
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-green-400">
+                <a href="/transparent-tracking" className="hover:text-green-400">
                   Track Donations
                 </a>
               </li>
@@ -50,17 +50,17 @@ export default function Footer() {
             <h3 className="text-white font-semibold mb-4">Support</h3>
             <ul className="space-y-2 text-slate-400">
               <li>
-                <a href="#" className="hover:text-green-400">
+                <a href="/faq" className="hover:text-green-400">
                   FAQ
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-green-400">
+                <a href="terms_of_submission" className="hover:text-green-400">
                   Terms of Use
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-green-400">
+                <a href="/privacy_and_policy" className="hover:text-green-400">
                   Privacy Policy
                 </a>
               </li>

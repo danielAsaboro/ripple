@@ -1,11 +1,6 @@
 import React from "react";
 import Image from "next/image";
 import Button from "@/components/common/Button";
-import Card from "@/components/common/Card";
-import Hero from "@/components/landing/Hero";
-import Features from "@/components/landing/Features";
-import Testimonials from "@/components/landing/Testimonials";
-import Footer from "@/components/common/Navigation/Footer";
 
 export default function DonateCTA() {
   return (

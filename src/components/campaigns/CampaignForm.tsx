@@ -5,41 +5,44 @@ import Image from "next/image";
 import Button from "@/components/common/Button";
 import Card from "@/components/common/Card";
 import { ImagePlus } from "lucide-react";
+import { useCreateCampaign } from "@/hooks/useCampaign";
+import { BN } from "@coral-xyz/anchor";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { CampaignCategory } from "@/types";
+import { toast } from "react-hot-toast";
+import {
+  validateCampaignDuration,
+  validateCampaignTarget,
+} from "@/utils/validation";
 
 interface CampaignFormProps {
-  onSubmit: (data: CampaignFormData) => void;
+  onSuccess?: () => void;
   onPreview?: () => void;
 }
 
-interface CampaignFormData {
-  title: string;
-  category: string;
-  fundraisingGoal: number;
-  startDate: string;
-  endDate: string;
-  description: string;
-  impactMetrics: string;
-  image?: File;
-}
-
 const categories = [
-  "Healthcare",
-  "Education",
-  "Food Supply",
-  "Emergency Relief",
-  "Infrastructure",
-  "Water Sanitation",
-];
+  { label: "Healthcare", value: { healthcare: {} } },
+  { label: "Education", value: { education: {} } },
+  { label: "Food Supply", value: { foodSupply: {} } },
+  { label: "Emergency Relief", value: { emergencyRelief: {} } },
+  { label: "Infrastructure", value: { infrastructure: {} } },
+  { label: "Water Sanitation", value: { waterSanitation: {} } },
+] as const;
 
-const CampaignForm = ({ onSubmit, onPreview }: CampaignFormProps) => {
-  const [formData, setFormData] = React.useState<CampaignFormData>({
+const CampaignForm = ({ onSuccess, onPreview }: CampaignFormProps) => {
+  const { connected } = useWallet();
+  const { createCampaign, loading, error } = useCreateCampaign();
+
+  const [formData, setFormData] = React.useState({
     title: "",
     category: "",
-    fundraisingGoal: 0,
+    description: "",
+    organizationName: "",
+    fundraisingGoal: "",
     startDate: "",
     endDate: "",
-    description: "",
-    impactMetrics: "",
+    imageUrl: "",
+    isUrgent: false,
   });
 
   const [imagePreview, setImagePreview] = React.useState<string | null>(null);
@@ -56,24 +59,77 @@ const CampaignForm = ({ onSubmit, onPreview }: CampaignFormProps) => {
     }));
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // In production, you'd upload to IPFS/Arweave here
+      const fakeUrl = URL.createObjectURL(file);
+      setImagePreview(fakeUrl);
       setFormData((prev) => ({
         ...prev,
-        image: file,
+        imageUrl: fakeUrl,
       }));
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    onSubmit(formData);
+
+    if (!connected) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
+
+    try {
+      const startTimestamp = Math.floor(
+        new Date(formData.startDate).getTime() / 1000
+      );
+      const endTimestamp = Math.floor(
+        new Date(formData.endDate).getTime() / 1000
+      );
+
+      // Validate duration
+      if (!validateCampaignDuration(startTimestamp, endTimestamp)) {
+        toast.error("Invalid campaign duration");
+        return;
+      }
+
+      const targetAmount = new BN(parseFloat(formData.fundraisingGoal) * 1e9); // Convert to lamports
+
+      // Validate target amount
+      if (!validateCampaignTarget(targetAmount)) {
+        toast.error("Target amount is too low");
+        return;
+      }
+
+      // Find the selected category object
+      const selectedCategory = categories.find(
+        (c) => c.label === formData.category
+      );
+      if (!selectedCategory) {
+        toast.error("Please select a valid category");
+        return;
+      }
+
+      const campaignData = {
+        title: formData.title,
+        description: formData.description,
+        category: selectedCategory.value,
+        organizationName: formData.organizationName,
+        targetAmount,
+        startDate: new BN(startTimestamp),
+        endDate: new BN(endTimestamp),
+        imageUrl: formData.imageUrl,
+        isUrgent: formData.isUrgent,
+      };
+
+      const result = await createCampaign(campaignData);
+      toast.success("Campaign created successfully!");
+      onSuccess?.();
+    } catch (err) {
+      console.error("Error creating campaign:", err);
+      toast.error("Failed to create campaign");
+    }
   };
 
   return (
@@ -125,11 +181,30 @@ const CampaignForm = ({ onSubmit, onPreview }: CampaignFormProps) => {
             >
               <option value="">Select a category</option>
               {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
+                <option key={category.label} value={category.label}>
+                  {category.label}
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label
+              htmlFor="organizationName"
+              className="block text-sm font-medium text-slate-200 mb-1"
+            >
+              Organization Name
+            </label>
+            <input
+              type="text"
+              id="organizationName"
+              name="organizationName"
+              value={formData.organizationName}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-green-400"
+              placeholder="Enter organization name"
+              required
+            />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -138,7 +213,7 @@ const CampaignForm = ({ onSubmit, onPreview }: CampaignFormProps) => {
                 htmlFor="fundraisingGoal"
                 className="block text-sm font-medium text-slate-200 mb-1"
               >
-                Fundraising Goal ($)
+                Fundraising Goal (SOL)
               </label>
               <input
                 type="number"
@@ -211,27 +286,8 @@ const CampaignForm = ({ onSubmit, onPreview }: CampaignFormProps) => {
           </div>
 
           <div>
-            <label
-              htmlFor="impactMetrics"
-              className="block text-sm font-medium text-slate-200 mb-1"
-            >
-              Impact Metrics
-            </label>
-            <input
-              type="text"
-              id="impactMetrics"
-              name="impactMetrics"
-              value={formData.impactMetrics}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-green-400"
-              placeholder="e.g., Number of lives to be impacted"
-              required
-            />
-          </div>
-
-          <div>
             <label className="block text-sm font-medium text-slate-200 mb-1">
-              Upload Image/Video
+              Upload Image
             </label>
             <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-700 border-dashed rounded-lg">
               <div className="space-y-1 text-center">
@@ -271,26 +327,38 @@ const CampaignForm = ({ onSubmit, onPreview }: CampaignFormProps) => {
             </div>
           </div>
 
-          <div className="pt-4 border-t border-slate-700">
-            <h3 className="text-sm font-medium text-white mb-2">
-              Guidelines and Tips
-            </h3>
-            <ul className="text-sm text-slate-400 space-y-1">
-              <li>
-                • Set a realistic fundraising goal to build trust with donors.
-              </li>
-              <li>• Use high-quality images to connect emotionally.</li>
-              <li>
-                • Clearly define your impact metrics to attract donations.
-              </li>
-            </ul>
+          <div>
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                name="isUrgent"
+                checked={formData.isUrgent}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    isUrgent: e.target.checked,
+                  }))
+                }
+                className="form-checkbox h-4 w-4 text-green-400 rounded border-slate-700 bg-slate-800 focus:ring-0"
+              />
+              <span className="text-sm text-slate-200">
+                Mark as Urgent Campaign
+              </span>
+            </label>
           </div>
 
           <div className="flex justify-end gap-4">
-            <Button type="button" variant="outline" onClick={onPreview}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onPreview}
+              disabled={loading}
+            >
               Preview Campaign
             </Button>
-            <Button type="submit">Submit for Review</Button>
+            <Button type="submit" disabled={loading || !connected}>
+              {loading ? "Creating..." : "Submit Campaign"}
+            </Button>
           </div>
         </div>
       </form>
