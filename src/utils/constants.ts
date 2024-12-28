@@ -4,8 +4,6 @@ import RippleIDL from "../types/ripple.json";
 
 export const PROGRAM_ID = new PublicKey(RippleIDL.address);
 
-// export const PROGRAM_ID = new PublicKey('BHhjYYFgpQjUDx4RL7ge923gZeJ3vyQScHBwYDCFSkd7');
-
 export const SEEDS = {
   USER: "user",
   CAMPAIGN: "campaign",
