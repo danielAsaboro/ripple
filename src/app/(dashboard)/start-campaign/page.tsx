@@ -2,10 +2,10 @@
 "use client";
 import React from "react";
 import CampaignForm from "@/components/campaigns/CampaignForm";
-import type { CampaignFormData } from "@/types/campaign";
+import type { CampaignFormDataF } from "@/types/campaign";
 
 export default function StartCampaignPage() {
-  const handleSubmit = (data: CampaignFormData) => {
+  const handleSubmit = (data: CampaignFormDataF) => {
     // Handle form submission
     console.log("Form submitted:", data);
   };
