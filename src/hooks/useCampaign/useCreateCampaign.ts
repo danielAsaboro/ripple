@@ -8,7 +8,7 @@ import {
   validateCampaignTarget,
 } from "../../utils/validation";
 import { useProgram } from "../useProgram";
-import { SystemProgram } from "@solana/web3.js";
+import { AccountInfo, SystemProgram } from "@solana/web3.js";
 
 export const useCreateCampaign = () => {
   const { program } = useProgram();
