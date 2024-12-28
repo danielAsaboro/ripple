@@ -61,11 +61,7 @@ export const ProgramProvider = ({ children }: ProgramProviderProps) => {
       );
 
       // Initialize program
-      const program = new Program(
-        RippleIDL as Ripple,
-        RippleIDL.address,
-        provider
-      );
+      const program = new Program(RippleIDL as Ripple, provider);
 
       // Test connection
       await program.account.campaign.all();
@@ -90,19 +86,6 @@ export const ProgramProvider = ({ children }: ProgramProviderProps) => {
   useEffect(() => {
     initializeProgram();
   }, [connection, wallet.publicKey]);
-
-  // Setup connection error listener
-  useEffect(() => {
-    const handleConnectionError = () => {
-      toast.error("Connection lost. Attempting to reconnect...");
-      initializeProgram();
-    };
-
-    connection.onError = handleConnectionError;
-    return () => {
-      connection.onError = undefined;
-    };
-  }, [connection]);
 
   const programContextValue: ProgramContextState = {
     ...state,

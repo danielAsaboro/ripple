@@ -1,15 +1,22 @@
 // File: /app/(dashboard)/layout.tsx
+"use client";
 
 import React from "react";
 import Sidebar from "@/components/common/Navigation/Sidebar";
-import { Bell } from "lucide-react";
+import { NotificationsDropdown } from "@/components/common/Navigation/NotificationsDropdown";
+import { ProfileMenu } from "@/components/common/Navigation/ProfileMenu";
 import Button from "@/components/common/Button";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useUserProfile } from "@/hooks/useUser/useUserProfile";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { publicKey: authority } = useWallet();
+  const { profile, loading } = useUserProfile({ authority });
+
   return (
     <div className="flex h-screen">
       <Sidebar />
@@ -17,15 +24,23 @@ export default function DashboardLayout({
       <div className="flex flex-1 flex-col overflow-hidden">
         <header className="flex h-16 items-center justify-between border-b border-slate-700 bg-slate-800 px-6">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-semibold text-white">Welcome, Dara</h1>
+            <h1 className="text-xl font-semibold text-white">
+              {loading ? (
+                <span className="animate-pulse">Welcome...</span>
+              ) : (
+                `Welcome, ${profile?.name || "Guest"}`
+              )}
+            </h1>
           </div>
 
           <div className="flex items-center gap-4">
-            <Button>Donate Now</Button>
-            <button className="rounded-full p-2 text-slate-200 hover:bg-slate-700">
-              <Bell className="h-5 w-5" />
-            </button>
-            <div className="h-8 w-8 rounded-full bg-slate-700" />
+            <Button
+              onClick={() => (window.location.href = "/active-campaigns")}
+            >
+              Donate Now
+            </Button>
+            <NotificationsDropdown />
+            <ProfileMenu />
           </div>
         </header>
 

@@ -1,6 +1,6 @@
 // File: /components/common/Navigation/Sidebar.tsx
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/utils/ts-merge";
@@ -17,6 +17,7 @@ import {
   LogOut,
 } from "lucide-react";
 import Image from "next/image";
+import LogoutModal from "@/components/auth/LogoutModal";
 
 const navigationItems = [
   {
@@ -62,11 +63,6 @@ const bottomNavigationItems = [
     icon: HelpCircle,
     href: "/support",
   },
-  {
-    title: "Logout",
-    icon: LogOut,
-    href: "/logout",
-  },
 ];
 
 interface SidebarProps {
@@ -75,6 +71,7 @@ interface SidebarProps {
 
 const Sidebar = ({ className }: SidebarProps) => {
   const pathname = usePathname();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const NavItem = ({
     href,
@@ -146,7 +143,20 @@ const Sidebar = ({ className }: SidebarProps) => {
             title={item.title}
           />
         ))}
+
+        <button
+          onClick={() => setShowLogoutModal(true)}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-slate-200 transition-colors hover:bg-slate-700"
+        >
+          <LogOut className="h-5 w-5" />
+          <span>Logout</span>
+        </button>
       </div>
+
+      <LogoutModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+      />
     </div>
   );
 };

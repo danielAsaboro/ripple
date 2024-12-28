@@ -112,7 +112,7 @@ export const AccountTab = () => {
             <li>Your account will be permanently deleted</li>
             <li>All your donation history will be removed</li>
             <li>Your badges and achievements will be lost</li>
-            <li>You won't be able to recover this data</li>
+            <li>You won&apos;t be able to recover this data</li>
           </ul>
         </div>
       </AppModal>

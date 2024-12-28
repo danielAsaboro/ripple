@@ -156,17 +156,17 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   useEffect(() => {
     if (!program || !publicKey) return;
 
-    const eventListener = program.addEventListener(
-      "UserUpdated",
-      async (event: any) => {
-        if (event.authority.equals(publicKey)) {
-          await fetchUser();
-        }
-      }
-    );
+    // const eventListener = program.addEventListener(
+    //   "userUpdated",
+    //   async (event: any) => {
+    //     if (event.authority.equals(publicKey)) {
+    //       await fetchUser();
+    //     }
+    //   }
+    // );
 
     return () => {
-      program.removeEventListener(eventListener);
+      // program.removeEventListener(eventListener);
     };
   }, [program, publicKey]);
 

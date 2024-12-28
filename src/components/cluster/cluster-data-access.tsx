@@ -31,14 +31,14 @@ interface ClusterContextState {
 const defaultClusters: Cluster[] = [
   {
     name: "Localnet",
-    endpoint: "http://127.0.0.1:8899",
+    endpoint: "http://localhost:8899",
     network: ClusterNetwork.Localnet,
+    active: true,
   },
   {
     name: "Devnet",
     endpoint: clusterApiUrl("devnet"),
     network: ClusterNetwork.Devnet,
-    active: true,
   },
   {
     name: "Testnet",
@@ -87,6 +87,12 @@ export function ClusterProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("clusters", JSON.stringify(clusters));
+      // Add logging for initial cluster setup
+      const activeCluster = clusters.find((c) => c.active);
+      if (activeCluster) {
+        console.log("Initial Cluster URL:", activeCluster.endpoint);
+        console.log("Initial Cluster Network:", activeCluster.network);
+      }
     }
   }, [clusters]);
 
@@ -98,6 +104,9 @@ export function ClusterProvider({ children }: { children: React.ReactNode }) {
       }))
     );
     setClusterState(newCluster);
+    // Add logging here to track cluster changes
+    console.log("Current Cluster URL:", newCluster.endpoint);
+    console.log("Current Cluster Network:", newCluster.network);
   };
 
   const addCluster = (newCluster: Cluster) => {

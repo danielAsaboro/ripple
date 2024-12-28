@@ -31,8 +31,9 @@ export const useBadges = ({ userPDA }: UseBadgesProps): BadgeSystem => {
   const [totalDonationValue, setTotalDonationValue] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  let badgeAwardEventNumber: number;
 
-  const fetchBadges = async () => {
+  const fetchBadges = useCallback(async () => {
     if (!program || (!userPDA && !authority)) return;
 
     setLoading(true);
@@ -43,15 +44,17 @@ export const useBadges = ({ userPDA }: UseBadgesProps): BadgeSystem => {
       setBadges(user.badges);
       setTotalDonationValue(user.totalDonations.toNumber());
 
-      // Listen for badge awarded events
-      program.addEventListener("BadgeAwarded", (event: any) => {
-        if (event.user.equals(userPDA)) {
-          refreshBadges();
-          toast.success(
-            `New badge earned: ${getBadgeTypeName(event.badgeType)}`
-          );
+      badgeAwardEventNumber = program.addEventListener(
+        "badgeAwarded",
+        (event: any) => {
+          if (event.user.equals(userPDA)) {
+            refreshBadges();
+            toast.success(
+              `New badge earned: ${getBadgeTypeName(event.badgeType)}`
+            );
+          }
         }
-      });
+      );
     } catch (err) {
       console.error("Error fetching badges:", err);
       setError(err as Error);
@@ -59,19 +62,20 @@ export const useBadges = ({ userPDA }: UseBadgesProps): BadgeSystem => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [program, userPDA, authority]);
 
   // Initial fetch
   useEffect(() => {
-    fetchBadges();
+    if (program) {
+      fetchBadges();
+    }
 
-    // Cleanup event listener
     return () => {
       if (program) {
-        program.removeEventListener("BadgeAwarded");
+        program.removeEventListener(badgeAwardEventNumber);
       }
     };
-  }, [program, userPDA, authority]);
+  }, [program, userPDA, authority, fetchBadges]);
 
   // Check if user has a specific badge
   const hasBadge = useCallback(
