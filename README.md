@@ -118,11 +118,13 @@ flowchart TB
     SF --> WH
     WH --> SSE
     WH --> AN
-    AN --> KV
-    SSE --> CL
-    CL --> UI
+    AN --> FN
+    FN --> KV
+    KV --> FN
     AN --> KV
     KV --> AN
+    SSE --> CL
+    CL --> UI
 
     classDef blockchain fill:#FF69B4,stroke:#fff,stroke-width:4px,color:#000
     classDef quicknode fill:#00FFFF,stroke:#fff,stroke-width:4px,color:#000
