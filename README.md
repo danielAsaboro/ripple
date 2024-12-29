@@ -124,10 +124,10 @@ flowchart TB
     AN --> KV
     KV --> AN
 
-    classDef blockchain fill:#f9f,stroke:#333,stroke-width:2px
-    classDef quicknode fill:#bbf,stroke:#333,stroke-width:2px
-    classDef backend fill:#bfb,stroke:#333,stroke-width:2px
-    classDef client fill:#fbb,stroke:#333,stroke-width:2px
+    classDef blockchain fill:#FF69B4,stroke:#fff,stroke-width:4px,color:#000
+    classDef quicknode fill:#00FFFF,stroke:#fff,stroke-width:4px,color:#000
+    classDef backend fill:#98FB98,stroke:#fff,stroke-width:4px,color:#000
+    classDef client fill:#FFB6C1,stroke:#fff,stroke-width:4px,color:#000
     
     class ST blockchain
     class QS,SF,KV,FN quicknode
