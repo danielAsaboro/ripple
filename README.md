@@ -86,6 +86,56 @@ Ripple solves these issues by:
 
 The platform implements a sophisticated event-driven architecture that processes and analyzes blockchain transactions in real-time. At its core, it utilizes QuickNode Streams for transaction monitoring, Functions for serverless analytics processing, and Key-Value Store for efficient data management and caching.
 
+```mermaid
+flowchart TB
+    subgraph Blockchain
+        ST[Solana Transactions]
+    end
+
+    subgraph QuickNode
+        direction TB
+        QS[QuickNode Streams]
+        SF[Stream Filter]
+        KV[Key-Value Store]
+        FN[Functions]
+    end
+
+    subgraph Backend
+        direction TB
+        WH[Webhook API]
+        AN[Analytics Service]
+        SSE[SSE Server]
+    end
+
+    subgraph Clients
+        direction TB
+        CL[Client Applications]
+        UI[User Interface]
+    end
+
+    ST --> QS
+    QS --> SF
+    SF --> WH
+    WH --> SSE
+    WH --> AN
+    AN --> KV
+    SSE --> CL
+    CL --> UI
+    AN --> KV
+    KV --> AN
+
+    classDef blockchain fill:#f9f,stroke:#333,stroke-width:2px
+    classDef quicknode fill:#bbf,stroke:#333,stroke-width:2px
+    classDef backend fill:#bfb,stroke:#333,stroke-width:2px
+    classDef client fill:#fbb,stroke:#333,stroke-width:2px
+    
+    class ST blockchain
+    class QS,SF,KV,FN quicknode
+    class WH,AN,SSE backend
+    class CL,UI client
+```
+
+
 ### Architecture Design Decisions
 
 The system architecture prioritizes real-time data processing while maintaining data consistency and reliability. Several key architectural decisions shape the platform's implementation:
