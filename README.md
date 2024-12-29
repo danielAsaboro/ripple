@@ -144,9 +144,9 @@ The system architecture prioritizes real-time data processing while maintaining 
 
 **Event Delivery System: SSE over WebSocket**
 
-![Alt text](/docs/images/protocol-comparison.svg)
-
 We chose Server-Sent Events (SSE) over WebSocket for client communication due to several advantages in our use case:
+
+![Alt text](/docs/images/protocol-comparison.svg)
 
 - Native reconnection handling without custom implementation
 - Automatic event ID tracking and last-event-ID recovery
@@ -400,12 +400,13 @@ async function updateMetrics(
 
 ## Development and Deployment
 
-### Prerequisites
+### 🛠️ Development Tools
 
-- Node.js 16+
-- QuickNode API access
-- Solana development environment
-- Environment configuration
+- Node.js 20+
+- **Frontend**: Next.js 14, React, TailwindCSS
+- **Smart Contract**: Rust, Anchor Framework
+- **Infrastructure**: QuickNode API access
+- **Version Control**: Git/GitHub
 
 ## 📁 Project Structure
 
@@ -465,6 +466,8 @@ NEXT_PUBLIC_QUICKNODE_RPC_URL=your_quicknode_rpc_url
 
 ```bash
 npm run dev
+
+# note that `npm run build` will fail for now as it's still in dev mode
 ```
 
 ## 💡 Key Features Implemented
@@ -516,12 +519,6 @@ npm run dev
 - **Scalability**: Tested with 100+ concurrent connections
 - **Memory Usage**: Optimized for long-running connections
 
-## 🛠️ Development Tools
-
-- **Frontend**: Next.js 14, React, TailwindCSS
-- **Smart Contract**: Rust, Anchor Framework
-- **Infrastructure**: QuickNode Streams
-- **Version Control**: Git/GitHub
 
 ## 🔒 Security Considerations
 
@@ -538,7 +535,8 @@ npm run dev
 
 ## 🤝 Contributing
 
-We welcome contributions! Please follow these steps:
+The whole app was designed by my lovely girlfriend, Ruth Oyamine on short notice;
+Big thanks to her; Also, We welcome contributions! Please follow these steps:
 
 1. Fork the repository
 2. Create your feature branch
@@ -553,6 +551,7 @@ This project is MIT licensed - see [LICENSE](LICENSE) for details.
 ## 👥 Team
 
 - Daniel Asaboro - Lead Developer
+- Ruth Oyamine - Lead Designer
 
 ## 🔗 Links
 
@@ -562,9 +561,11 @@ This project is MIT licensed - see [LICENSE](LICENSE) for details.
 
 ## 🙏 Acknowledgments
 
+
 - QuickNode for providing excellent blockchain infrastructure
 - Solana Foundation for the blockchain platform
 - Anchor Framework team for smart contract development tools
+- Most importantly, SupertTeamNG for setting up the Bounty program
 
 ## ❓ Support
 
