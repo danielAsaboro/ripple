@@ -1,8 +1,8 @@
 # 🌊 Ripple - Decentralized Fundraising Platform with QuickNode Integration
 
-## Overview
+## Quick Overview
 
-Ripple is a decentralized fundraising platform built on Solana.
+Ripple is a decentralized fundraising platform built on the Solana Blockchain.
 
 ```mermaid
 
@@ -143,6 +143,8 @@ flowchart TB
 The system architecture prioritizes real-time data processing while maintaining data consistency and reliability. Several key architectural decisions shape the platform's implementation:
 
 **Event Delivery System: SSE over WebSocket**
+
+![Alt text](/docs/images/protocol-comparison.svg)
 
 We chose Server-Sent Events (SSE) over WebSocket for client communication due to several advantages in our use case:
 
@@ -404,103 +406,6 @@ async function updateMetrics(
 - QuickNode API access
 - Solana development environment
 - Environment configuration
-
-## 🏗️ Technical Architecture
-
-### System Overview
-
-```mermaid
-graph TB
-    A[Solana Blockchain] --> B[QuickNode Streams]
-    B -->|Webhook| C[Next.js Backend]
-    C -->|SSE| D[React Frontend]
-    D -->|User Interface| E[End Users]
-
-    style A fill:#232323,stroke:#fff,stroke-width:2px,color:#fff
-    style B fill:#4CAF50,stroke:#fff,stroke-width:2px,color:#fff
-    style C fill:#2196F3,stroke:#fff,stroke-width:2px,color:#fff
-    style D fill:#9C27B0,stroke:#fff,stroke-width:2px,color:#fff
-    style E fill:#E91E63,stroke:#fff,stroke-width:2px,color:#fff
-```
-
-### Data Flow Sequence
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Frontend
-    participant QN as QuickNode Streams
-    participant BC as Blockchain
-
-    User->>Frontend: Create Campaign
-    Frontend->>BC: Submit Transaction
-    BC->>QN: Emit Event
-    QN->>Frontend: Real-time Update
-    Frontend->>User: UI Refresh
-
-    Note over QN,Frontend: WebSocket Connection
-    Note over Frontend,User: SSE Updates
-```
-
-## 🔧 Technical Implementation
-
-### QuickNode Streams Integration
-
-```typescript
-// File: src/services/quicknode.ts
-const QUICKNODE_STREAMS_URL = process.env.NEXT_PUBLIC_QUICKNODE_STREAMS_URL;
-
-class QuickNodeService {
-  private ws: WebSocket;
-
-  constructor() {
-    this.ws = new WebSocket(QUICKNODE_STREAMS_URL!);
-    this.setupEventListeners();
-  }
-
-  private setupEventListeners() {
-    this.ws.onmessage = async (event) => {
-      const data = JSON.parse(event.data);
-      await this.processStreamEvent(data);
-    };
-  }
-
-  private async processStreamEvent(data: any) {
-    await fetch("/api/webhook", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-  }
-}
-```
-
-### Server-Sent Events Implementation
-
-```typescript
-// File: app/api/webhook-events/route.ts
-let clients = new Set<ReadableStreamDefaultController>();
-
-export async function GET(req: NextRequest) {
-  const stream = new ReadableStream({
-    start(controller) {
-      clients.add(controller);
-
-      req.signal.addEventListener("abort", () => {
-        clients.delete(controller);
-      });
-    },
-  });
-
-  return new NextResponse(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    },
-  });
-}
-```
 
 ## 📁 Project Structure
 
