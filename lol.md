@@ -2,7 +2,7 @@
 
 A robust, real-time donation tracking platform built on Solana, leveraging QuickNode's comprehensive suite of Web3 infrastructure services. This platform demonstrates the power of combining QuickNode Streams, Functions, and Key-Value Store to create a scalable, responsive system for managing charitable campaigns and donations.
 
-## Technical Overview
+## Technical Overview 
 
 The platform implements a sophisticated event-driven architecture that processes and analyzes blockchain transactions in real-time. At its core, it utilizes QuickNode Streams for transaction monitoring, Functions for serverless analytics processing, and Key-Value Store for efficient data management and caching.
 
