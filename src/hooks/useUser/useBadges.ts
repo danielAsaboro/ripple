@@ -44,17 +44,17 @@ export const useBadges = ({ userPDA }: UseBadgesProps): BadgeSystem => {
       setBadges(user.badges);
       setTotalDonationValue(user.totalDonations.toNumber());
 
-      badgeAwardEventNumber = program.addEventListener(
-        "badgeAwarded",
-        (event: any) => {
-          if (event.user.equals(userPDA)) {
-            refreshBadges();
-            toast.success(
-              `New badge earned: ${getBadgeTypeName(event.badgeType)}`
-            );
-          }
-        }
-      );
+      // badgeAwardEventNumber = program.addEventListener(
+      //   "badgeAwarded",
+      //   (event: any) => {
+      //     if (event.user.equals(userPDA)) {
+      //       refreshBadges();
+      //       toast.success(
+      //         `New badge earned: ${getBadgeTypeName(event.badgeType)}`
+      //       );
+      //     }
+      //   }
+      // );
     } catch (err) {
       console.error("Error fetching badges:", err);
       setError(err as Error);
@@ -72,7 +72,7 @@ export const useBadges = ({ userPDA }: UseBadgesProps): BadgeSystem => {
 
     return () => {
       if (program) {
-        program.removeEventListener(badgeAwardEventNumber);
+        // program.removeEventListener(badgeAwardEventNumber);
       }
     };
   }, [program, userPDA, authority, fetchBadges]);

@@ -128,11 +128,18 @@ const Sidebar = ({ className }: SidebarProps) => {
 
       <Link
         href="/start-campaign"
-        className="mt-6 flex items-center gap-2 rounded-lg bg-green-400 px-3 py-2 text-white hover:bg-green-500"
+        className={cn(
+          "mt-6 flex items-center gap-2 rounded-lg px-3 py-2",
+          "bg-white text-green-400 hover:bg-slate-100",
+          "transition-colors duration-200",
+          pathname === "/start-campaign" &&
+            "bg-green-400 text-white hover:bg-green-500"
+        )}
       >
         <Plus className="h-5 w-5" />
         <span>Start a Campaign</span>
       </Link>
+
 
       <div className="mt-auto space-y-2">
         {bottomNavigationItems.map((item) => (
