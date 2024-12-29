@@ -9,20 +9,27 @@ export default function Footer() {
       <div className="mx-auto max-w-7xl">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <div className="flex items-center space-x-2 mb-4">
-              <Image src="/logo.svg" alt="Rippl" width={32} height={32} />
-              <span className="text-xl font-bold text-white">Rippl</span>
+            <div className="flex items-center space-x-2 mb-4 justify-items-start">
+              <Image
+                src="/logo.svg"
+                className="w-24 h-16"
+                alt="Rippl"
+                width={32}
+                height={32}
+              />
             </div>
-            <div className="text-slate-400 space-y-2">
-              <p>Email: info@openhouse.ng</p>
+            <div className="text-slate-400 space-y-2 text-start">
+              <p>Email: info@rippledonations.org</p>
               <p>Phone: +234 8012 345 6789</p>
               <p>Address: 789 Market St, Suite 10, Lagos Island, Nigeria</p>
             </div>
           </div>
 
           <div>
-            <h3 className="text-white font-semibold mb-4">Company</h3>
-            <ul className="space-y-2 text-slate-400">
+            <h3 className="text-white font-semibold mb-4 text-start">
+              Company
+            </h3>
+            <ul className="space-y-2 text-slate-400 text-start">
               <li>
                 <a href="/" className="hover:text-green-400">
                   Home
@@ -39,7 +46,10 @@ export default function Footer() {
                 </a>
               </li>
               <li>
-                <a href="/transparent-tracking" className="hover:text-green-400">
+                <a
+                  href="/transparent-tracking"
+                  className="hover:text-green-400"
+                >
                   Track Donations
                 </a>
               </li>
@@ -47,8 +57,10 @@ export default function Footer() {
           </div>
 
           <div>
-            <h3 className="text-white font-semibold mb-4">Support</h3>
-            <ul className="space-y-2 text-slate-400">
+            <h3 className="text-white font-semibold mb-4 text-start">
+              Support
+            </h3>
+            <ul className="space-y-2 text-slate-400 text-start">
               <li>
                 <a href="/faq" className="hover:text-green-400">
                   FAQ
@@ -68,7 +80,7 @@ export default function Footer() {
           </div>
 
           <div>
-            <h3 className="text-white font-semibold mb-4">Stay Updated</h3>
+            <h3 className="text-white font-semibold mb-4 text-start">Stay Updated</h3>
             <div className="flex gap-2">
               <input
                 type="email"

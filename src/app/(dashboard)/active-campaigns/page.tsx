@@ -6,14 +6,14 @@ import { Search } from "lucide-react";
 import Button from "@/components/common/Button";
 import CampaignGrid from "@/components/campaigns/CampaignGrid";
 import { useProgram } from "@/hooks/useProgram";
-import { Campaign } from "@/types";
+import { Campaign, CampaignWithKey } from "@/types";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 
 export default function CampaignsPage() {
   const router = useRouter();
   const { program } = useProgram();
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [campaigns, setCampaigns] = useState<CampaignWithKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("");
@@ -24,7 +24,13 @@ export default function CampaignsPage() {
 
       try {
         const allCampaigns = await program.account.campaign.all();
-        setCampaigns(allCampaigns.map((c) => c.account as Campaign));
+        // Now storing both the account data and publicKey
+        setCampaigns(
+          allCampaigns.map((c) => ({
+            publicKey: c.publicKey,
+            account: c.account as Campaign,
+          }))
+        );
       } catch (error) {
         console.error("Error fetching campaigns:", error);
         toast.error("Failed to load campaigns");
@@ -37,7 +43,6 @@ export default function CampaignsPage() {
   }, [program]);
 
   const handleShare = (campaignId: string) => {
-    // Implement share functionality
     const shareUrl = `${window.location.origin}/campaign/${campaignId}`;
     if (navigator.share) {
       navigator
@@ -60,27 +65,38 @@ export default function CampaignsPage() {
     if (searchTerm) {
       filtered = filtered.filter(
         (campaign) =>
-          campaign.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          campaign.description.toLowerCase().includes(searchTerm.toLowerCase())
+          campaign.account.title
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          campaign.account.description
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())
       );
     }
 
     // Apply sorting
     switch (sortBy) {
       case "urgent":
-        filtered.sort((a, b) => (b.isUrgent ? 1 : 0) - (a.isUrgent ? 1 : 0));
+        filtered.sort(
+          (a, b) => (b.account.isUrgent ? 1 : 0) - (a.account.isUrgent ? 1 : 0)
+        );
         break;
       case "ending-soon":
-        filtered.sort((a, b) => a.endDate.toNumber() - b.endDate.toNumber());
+        filtered.sort(
+          (a, b) => a.account.endDate.toNumber() - b.account.endDate.toNumber()
+        );
         break;
       case "most-funded":
         filtered.sort(
-          (a, b) => b.raisedAmount.toNumber() - a.raisedAmount.toNumber()
+          (a, b) =>
+            b.account.raisedAmount.toNumber() -
+            a.account.raisedAmount.toNumber()
         );
         break;
       case "newest":
         filtered.sort(
-          (a, b) => b.startDate.toNumber() - a.startDate.toNumber()
+          (a, b) =>
+            b.account.startDate.toNumber() - a.account.startDate.toNumber()
         );
         break;
     }

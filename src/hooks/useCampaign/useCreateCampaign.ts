@@ -1,22 +1,33 @@
-// hooks/useCampaign/useCreateCampaign.ts
+// File: /hooks/useCampaign/useCreateCampaign.ts
 import { useState } from "react";
 import { CreateCampaignParams } from "../../types";
 import { findCampaignPDA, findUserPDA } from "../../utils/pdas";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useConnection } from "@solana/wallet-adapter-react";
 import {
   validateCampaignDuration,
   validateCampaignTarget,
 } from "../../utils/validation";
+import { SystemProgram } from "@solana/web3.js";
 import { useProgram } from "../useProgram";
-import { AccountInfo, SystemProgram } from "@solana/web3.js";
+import { handleTransaction } from "@/utils/transaction";
+
+interface CreateCampaignResult {
+  campaignPDA: string;
+  signature: string;
+  success: boolean;
+}
 
 export const useCreateCampaign = () => {
   const { program } = useProgram();
   const { publicKey: authority } = useWallet();
+  const { connection } = useConnection();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const createCampaign = async (params: CreateCampaignParams) => {
+  const createCampaign = async (
+    params: CreateCampaignParams
+  ): Promise<CreateCampaignResult> => {
     if (!program || !authority) {
       throw new Error("Program or wallet not connected");
     }
@@ -34,16 +45,17 @@ export const useCreateCampaign = () => {
       ) {
         throw new Error("Invalid campaign duration");
       }
+
       if (!validateCampaignTarget(params.targetAmount)) {
         throw new Error("Target amount too low");
       }
 
-      // Get PDAs
+      // Generate PDAs
       const [userPDA] = await findUserPDA(authority);
       const [campaignPDA] = await findCampaignPDA(params.title, authority);
 
-      // Send transaction
-      const tx = await program.methods
+      // Prepare transaction
+      const transaction = program.methods
         .createCampaign(
           params.title,
           params.description,
@@ -63,14 +75,35 @@ export const useCreateCampaign = () => {
         })
         .rpc();
 
-      return { campaignPDA, tx };
+      // Execute and confirm transaction
+      const result = await handleTransaction<void>(transaction, connection, {
+        confirmationMessage: "Campaign created successfully!",
+        errorMessage: "Failed to create campaign",
+        timeoutMs: 60000, // Increased timeout for campaign creation
+        commitment: "confirmed",
+      });
+
+      if (!result.success || !result.signature) {
+        throw new Error("Failed to create campaign");
+      }
+
+      return {
+        campaignPDA: campaignPDA.toBase58(),
+        signature: result.signature,
+        success: true,
+      };
     } catch (err) {
-      setError(err as Error);
-      throw err;
+      const error = err as Error;
+      setError(error);
+      throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  return { createCampaign, loading, error };
+  return {
+    createCampaign,
+    loading,
+    error,
+  };
 };

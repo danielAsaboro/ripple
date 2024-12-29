@@ -1,10 +1,12 @@
-// hooks/useWithdrawFunds.ts
+// File: /hooks/useCampaign/useWithdrawFunds.ts
 import { useState } from "react";
 import { findCampaignVaultPDA } from "../../utils/pdas";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useConnection } from "@solana/wallet-adapter-react";
 import { BN } from "@coral-xyz/anchor";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { useProgram } from "../useProgram";
+import { handleTransaction } from "@/utils/transaction";
 
 interface WithdrawParams {
   campaignPDA: PublicKey;
@@ -12,9 +14,16 @@ interface WithdrawParams {
   recipient: PublicKey;
 }
 
+interface WithdrawResult {
+  signature: string;
+  success: boolean;
+  campaignVaultPDA: PublicKey;
+}
+
 export const useWithdrawFunds = () => {
   const { program } = useProgram();
   const { publicKey: authority } = useWallet();
+  const { connection } = useConnection();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -22,7 +31,7 @@ export const useWithdrawFunds = () => {
     campaignPDA,
     amount,
     recipient,
-  }: WithdrawParams) => {
+  }: WithdrawParams): Promise<WithdrawResult> => {
     if (!program || !authority) {
       throw new Error("Program or wallet not connected");
     }
@@ -31,13 +40,15 @@ export const useWithdrawFunds = () => {
     setError(null);
 
     try {
+      // Fetch campaign data and derive PDAs
       const campaign = await program.account.campaign.fetch(campaignPDA);
       const [campaignVaultPDA] = await findCampaignVaultPDA(
         campaign.title,
         campaign.authority
       );
 
-      const tx = await program.methods
+      // Prepare withdrawal transaction
+      const transaction = program.methods
         .withdrawFunds(amount)
         .accounts({
           authority,
@@ -48,14 +59,35 @@ export const useWithdrawFunds = () => {
         })
         .rpc();
 
-      return tx;
+      // Execute and confirm transaction
+      const result = await handleTransaction<void>(transaction, connection, {
+        confirmationMessage: "Funds withdrawn successfully!",
+        errorMessage: "Failed to withdraw funds",
+        timeoutMs: 45000, // Adjusted timeout for withdrawal operations
+        commitment: "confirmed",
+      });
+
+      if (!result.success || !result.signature) {
+        throw new Error("Failed to withdraw funds");
+      }
+
+      return {
+        signature: result.signature,
+        success: true,
+        campaignVaultPDA,
+      };
     } catch (err) {
-      setError(err as Error);
-      throw err;
+      const error = err as Error;
+      setError(error);
+      throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  return { withdrawFunds, loading, error };
+  return {
+    withdrawFunds,
+    loading,
+    error,
+  };
 };

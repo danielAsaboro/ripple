@@ -8,7 +8,7 @@ export const lamportsToSol = (lamports: number | BN | BN): number => {
 };
 
 export const solToLamports = (sol: number): BN => {
-  return BN(sol * 1e9);
+  return new BN(sol * 1e9);
 };
 
 export const formatDate = (timestamp: number | BN | BN): string => {

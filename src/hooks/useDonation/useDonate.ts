@@ -1,4 +1,4 @@
-// hooks/useDonation/useDonate.ts
+// File: /hooks/useDonation/useDonate.ts
 import { useState } from "react";
 import {
   findDonationPDA,
@@ -6,10 +6,13 @@ import {
   findUserPDA,
 } from "../../utils/pdas";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useConnection } from "@solana/wallet-adapter-react";
 import { BN } from "@coral-xyz/anchor";
 import { PaymentMethod } from "../../types";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { useProgram } from "../useProgram";
+import { confirmTransaction } from "@/utils/transaction";
+import { toast } from "react-hot-toast";
 
 interface DonateParams {
   campaignPDA: PublicKey;
@@ -20,6 +23,7 @@ interface DonateParams {
 export const useDonate = () => {
   const { program } = useProgram();
   const { publicKey: donor } = useWallet();
+  const { connection } = useConnection();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -49,7 +53,9 @@ export const useDonate = () => {
         donationCount
       );
 
-      const tx = await program.methods
+      const toastId = toast.loading("Processing donation...");
+
+      const signature = await program.methods
         .donate(amount, paymentMethod, donationCount)
         .accounts({
           donor,
@@ -61,7 +67,13 @@ export const useDonate = () => {
         })
         .rpc();
 
-      return { donationPDA, tx };
+      const success = await confirmTransaction(connection, signature, toastId);
+
+      if (!success) {
+        throw new Error("Failed to confirm donation");
+      }
+
+      return { donationPDA, signature, success };
     } catch (err) {
       setError(err as Error);
       throw err;

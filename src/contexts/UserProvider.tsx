@@ -12,7 +12,12 @@ import { User } from "../types";
 import { findUserPDA } from "../utils/pdas";
 import { useProgram } from "@/hooks/useProgram";
 import { toast } from "react-hot-toast";
-import { useLocalStorage } from "@/hooks/useLocalStorage"; // We'll create this next
+import { useLocalStorage } from "@/hooks/useLocalStorage";
+import {
+  setWalletConnectionStatus,
+  setUserInitializationStatus,
+  clearAuthCookies,
+} from "@/utils/auth-cookies";
 
 interface UserContextState {
   user: User | null;
@@ -53,6 +58,21 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     initialized: false,
   });
 
+  useEffect(() => {
+    if (connected) {
+      setWalletConnectionStatus(true);
+    } else {
+      clearAuthCookies();
+      setState({
+        user: null,
+        loading: false,
+        error: null,
+        initialized: false,
+      });
+      setCachedUser(null);
+    }
+  }, [connected]);
+
   const fetchUser = async () => {
     if (!program || !publicKey) {
       setState((prev) => ({
@@ -77,6 +97,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         initialized: true,
       });
 
+      // Set initialization status cookie
+      setUserInitializationStatus(true);
+
       // Update cache
       setCachedUser(userAccount as User);
     } catch (error: any) {
@@ -89,6 +112,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           initialized: false,
         });
         setCachedUser(null);
+        setUserInitializationStatus(false);
       } else {
         setState({
           user: null,

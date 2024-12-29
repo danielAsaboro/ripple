@@ -5,7 +5,31 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import Card from "@/components/common/Card";
 import { Download } from "lucide-react";
 import { lamportsToSol } from "@/utils/format";
-import { DonationStatus, PaymentMethod } from "@/types";
+import { DonationStatus, PaymentMethod, Donation } from "@/types";
+import { PublicKey } from "@solana/web3.js";
+
+// Helper types for UI representation
+type UIStatus = "pending" | "completed" | "allocated" | "spent" | "all";
+type UIPaymentMethod = "cryptoWallet" | "card" | "all";
+
+// Helper functions to convert between UI and data model types
+const getStatusFromDonation = (status: DonationStatus): Exclude<UIStatus, "all"> => {
+  const statusKey = Object.keys(status)[0] as keyof DonationStatus;
+  return statusKey as Exclude<UIStatus, "all">;
+};
+
+const getPaymentMethodFromDonation = (method: PaymentMethod): Exclude<UIPaymentMethod, "all"> => {
+  const methodKey = Object.keys(method)[0] as keyof PaymentMethod;
+  return methodKey as Exclude<UIPaymentMethod, "all">;
+};
+
+const createDonationStatus = (status: Exclude<UIStatus, "all">): DonationStatus => {
+  return { [status]: {} } as DonationStatus;
+};
+
+const createPaymentMethod = (method: Exclude<UIPaymentMethod, "all">): PaymentMethod => {
+  return { [method]: {} } as PaymentMethod;
+};
 
 interface DonationHistoryProps {
   campaignPDA?: string;
@@ -21,27 +45,43 @@ export default function DonationHistory({
   const { publicKey: donor } = useWallet();
   const { donations, loading, error } = useDonationHistory({
     campaignPDA: campaignPDA ? new PublicKey(campaignPDA) : undefined,
-    userPDA: donor,
+    userPDA: donor ?? undefined,
   });
 
-  const [filter, setFilter] = React.useState<DonationStatus | "all">("all");
-  const [paymentFilter, setPaymentFilter] = React.useState<
-    PaymentMethod | "all"
-  >("all");
+  const [filter, setFilter] = React.useState<UIStatus>("all");
+  const [paymentFilter, setPaymentFilter] = React.useState<UIPaymentMethod>("all");
 
   const filteredDonations = React.useMemo(() => {
     let filtered = [...(donations || [])];
 
     if (filter !== "all") {
-      filtered = filtered.filter((d) => d.status === filter);
+      filtered = filtered.filter((d) => getStatusFromDonation(d.status) === filter);
     }
 
     if (paymentFilter !== "all") {
-      filtered = filtered.filter((d) => d.paymentMethod === paymentFilter);
+      filtered = filtered.filter(
+        (d) => getPaymentMethodFromDonation(d.paymentMethod) === paymentFilter
+      );
     }
 
     return limit ? filtered.slice(0, limit) : filtered;
   }, [donations, filter, paymentFilter, limit]);
+
+  const getStatusClassName = (status: DonationStatus): string => {
+    const statusKey = getStatusFromDonation(status);
+    switch (statusKey) {
+      case "completed":
+        return "bg-green-400/10 text-green-400";
+      case "pending":
+        return "bg-yellow-400/10 text-yellow-400";
+      case "allocated":
+        return "bg-blue-400/10 text-blue-400";
+      case "spent":
+        return "bg-purple-400/10 text-purple-400";
+      default:
+        return "bg-slate-400/10 text-slate-400";
+    }
+  };
 
   if (loading) {
     return (
@@ -79,7 +119,7 @@ export default function DonationHistory({
           <div className="flex gap-4 mb-6">
             <select
               value={filter}
-              onChange={(e) => setFilter(e.target.value as DonationStatus)}
+              onChange={(e) => setFilter(e.target.value as UIStatus)}
               className="bg-slate-700 text-white rounded-lg px-3 py-2"
             >
               <option value="all">All Statuses</option>
@@ -91,9 +131,7 @@ export default function DonationHistory({
 
             <select
               value={paymentFilter}
-              onChange={(e) =>
-                setPaymentFilter(e.target.value as PaymentMethod)
-              }
+              onChange={(e) => setPaymentFilter(e.target.value as UIPaymentMethod)}
               className="bg-slate-700 text-white rounded-lg px-3 py-2"
             >
               <option value="all">All Payment Methods</option>
@@ -137,25 +175,15 @@ export default function DonationHistory({
                     ◎{lamportsToSol(donation.amount)}
                   </td>
                   <td className="px-4 py-3 text-sm text-white">
-                    {new Date(
-                      donation.timestamp.toNumber() * 1000
-                    ).toLocaleDateString()}
+                    {new Date(donation.timestamp.toNumber() * 1000).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs ${
-                        donation.status === "completed"
-                          ? "bg-green-400/10 text-green-400"
-                          : donation.status === "pending"
-                          ? "bg-yellow-400/10 text-yellow-400"
-                          : "bg-blue-400/10 text-blue-400"
-                      }`}
-                    >
-                      {donation.status}
+                    <span className={`px-2 py-1 rounded-full text-xs ${getStatusClassName(donation.status)}`}>
+                      {getStatusFromDonation(donation.status)}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-sm text-white">
-                    {Object.keys(donation.paymentMethod)[0]}
+                    {getPaymentMethodFromDonation(donation.paymentMethod)}
                   </td>
                   <td className="px-4 py-3 text-sm">
                     {donation.transactionHash && (
@@ -168,10 +196,7 @@ export default function DonationHistory({
               ))}
               {filteredDonations.length === 0 && (
                 <tr>
-                  <td
-                    colSpan={6}
-                    className="px-4 py-8 text-center text-slate-400"
-                  >
+                  <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
                     No donations found
                   </td>
                 </tr>

@@ -1,6 +1,6 @@
 // File: /app/(dashboard)/dashboard/page.tsx
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useUserProfile } from "@/hooks/useUser/useUserProfile";
 import { useBadges } from "@/hooks/useUser/useBadges";
 import { useDonationHistory } from "@/hooks/useDonation";
@@ -12,10 +12,12 @@ import ImpactMetrics from "@/components/dashboard/ImpactMetrics";
 import CampaignCard from "@/components/dashboard/CampaignCard";
 import { getBadgeTypeString } from "@/types/badge";
 import { lamportsToSol } from "@/utils/format";
+import { getSolPrice, lamportsToUSD } from "@/utils/currency";
 
 export default function DashboardPage() {
   const { publicKey: authority } = useWallet();
   const userPDA = authority ? findUserPDA(authority)[0] : undefined;
+  const [solPrice, setSolPrice] = useState<number>(0);
 
   const { profile, loading: profileLoading } = useUserProfile({
     authority,
@@ -34,11 +36,21 @@ export default function DashboardPage() {
     userPDA,
   });
 
+  // Fetch SOL price
+  useEffect(() => {
+    const fetchSolPrice = async () => {
+      const price = await getSolPrice();
+      setSolPrice(price);
+    };
+    fetchSolPrice();
+  }, []);
   // Calculate changes (you'd replace this with actual historical data)
   const donationChange = {
     type: "increase" as const,
     value: "12%",
-    text: "+◎1.2",
+    text: `+$${(
+      lamportsToUSD(totalDonationValue || 0, solPrice) * 0.12
+    ).toFixed(2)}`,
   };
 
   if (!authority) {
@@ -68,8 +80,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <StatusCard
           title="Total Funds Donated"
-          value={totalDonationValue}
-          isSol={true}
+          value={lamportsToUSD(totalDonationValue || 0, solPrice)}
           change={donationChange}
           footer={{
             text: "View Report",
@@ -179,8 +190,14 @@ export default function DashboardPage() {
                 title={campaign.title}
                 organization={campaign.organizationName}
                 image={campaign.imageUrl}
-                target={campaign.targetAmount.toNumber()}
-                raised={campaign.raisedAmount.toNumber()}
+                target={lamportsToUSD(
+                  campaign.targetAmount.toNumber(),
+                  solPrice
+                )}
+                raised={lamportsToUSD(
+                  campaign.raisedAmount.toNumber(),
+                  solPrice
+                )}
                 progress={Number(
                   (
                     (campaign.raisedAmount.toNumber() /

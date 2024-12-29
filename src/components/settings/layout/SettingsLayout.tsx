@@ -19,7 +19,7 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({
   return (
     <div className="w-full max-w-4xl mx-auto">
       <Card className="p-6">
-        <div className="flex space-x-2 border-b border-slate-700 mb-6">
+        <div className="flex space-x-2 border-b border-slate-700 mb-6 justify-evenly">
           <TabButton
             active={activeTab === "wallet"}
             onClick={() => onTabChange("wallet")}

@@ -34,11 +34,6 @@ export default function DashboardLayout({
           </div>
 
           <div className="flex items-center gap-4">
-            <Button
-              onClick={() => (window.location.href = "/active-campaigns")}
-            >
-              Donate Now
-            </Button>
             <NotificationsDropdown />
             <ProfileMenu />
           </div>

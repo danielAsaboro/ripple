@@ -87,7 +87,7 @@ export default function ProcessPage() {
           <StepCard
             icon={Wallet}
             title="Connect Your Wallet"
-            description="Securely connect your cryptocurrency wallet, such as Solflare, Phantom or MetaMask, through our streamlined and user-friendly interface. This ensures a safe and efficient way to handle donations while leveraging the transparency of blockchain technology."
+            description="Securely connect your cryptocurrency wallet, such as Solflare, Phantom or Backpack, through our streamlined and user-friendly interface. This ensures a safe and efficient way to handle donations while leveraging the transparency of blockchain technology."
             image="/images/connect-wallet.png"
           />
           <StepCard

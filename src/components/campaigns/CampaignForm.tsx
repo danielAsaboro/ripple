@@ -1,6 +1,7 @@
 // File: /components/campaigns/CampaignForm.tsx
 "use client";
-import React from "react";
+
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Button from "@/components/common/Button";
 import Card from "@/components/common/Card";
@@ -8,16 +9,28 @@ import { ImagePlus } from "lucide-react";
 import { useCreateCampaign } from "@/hooks/useCampaign";
 import { BN } from "@coral-xyz/anchor";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { CampaignCategory } from "@/types";
 import { toast } from "react-hot-toast";
 import {
   validateCampaignDuration,
   validateCampaignTarget,
 } from "@/utils/validation";
 
+interface CampaignFormData {
+  title: string;
+  category: string;
+  description: string;
+  organizationName: string;
+  fundraisingGoalUSD: string;
+  startDate: string;
+  endDate: string;
+  imageUrl: string;
+  isUrgent: boolean;
+}
+
 interface CampaignFormProps {
   onSuccess?: () => void;
-  onPreview?: () => void;
+  onPreview?: (data: CampaignFormData) => void;
+  initialData?: CampaignFormData | null;
 }
 
 const categories = [
@@ -29,23 +42,87 @@ const categories = [
   { label: "Water Sanitation", value: { waterSanitation: {} } },
 ] as const;
 
-const CampaignForm = ({ onSuccess, onPreview }: CampaignFormProps) => {
+// Min and max in USD
+const MIN_GOAL_USD = 1; // $100 minimum
+const MAX_GOAL_USD = 1000000; // $1M maximum
+
+const CampaignForm = ({
+  onSuccess,
+  onPreview,
+  initialData,
+}: CampaignFormProps) => {
   const { connected } = useWallet();
   const { createCampaign, loading, error } = useCreateCampaign();
+  const [solPrice, setSolPrice] = useState<number | null>(null);
+  const [isPriceFetching, setIsPriceFetching] = useState(true);
 
-  const [formData, setFormData] = React.useState({
+  const [formData, setFormData] = useState<CampaignFormData>(() => ({
     title: "",
     category: "",
     description: "",
     organizationName: "",
-    fundraisingGoal: "",
+    fundraisingGoalUSD: "",
     startDate: "",
     endDate: "",
     imageUrl: "",
     isUrgent: false,
-  });
+    ...(initialData || {}), // Initialize with initial data if provided
+  }));
 
   const [imagePreview, setImagePreview] = React.useState<string | null>(null);
+
+  const handlePreviewClick = () => {
+    if (validateForm()) {
+      onPreview?.(formData);
+    }
+  };
+
+  const validateForm = (): boolean => {
+    // Implement form validation logic here
+    if (!formData.title || !formData.category || !formData.description) {
+      toast.error("Please fill in all required fields");
+      return false;
+    }
+
+    const startTimestamp = Math.floor(
+      new Date(formData.startDate).getTime() / 1000
+    );
+    const endTimestamp = Math.floor(
+      new Date(formData.endDate).getTime() / 1000
+    );
+
+    if (!validateCampaignDuration(startTimestamp, endTimestamp)) {
+      toast.error("Invalid campaign duration");
+      return false;
+    }
+
+    const usdAmount = parseFloat(formData.fundraisingGoalUSD);
+    if (usdAmount < MIN_GOAL_USD || usdAmount > MAX_GOAL_USD) {
+      toast.error(`Goal must be between $${MIN_GOAL_USD} and $${MAX_GOAL_USD}`);
+      return false;
+    }
+
+    return true;
+  };
+  // Fetch SOL price
+  useEffect(() => {
+    const fetchSolPrice = async () => {
+      try {
+        const response = await fetch(
+          "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd"
+        );
+        const data = await response.json();
+        setSolPrice(data.solana.usd);
+      } catch (error) {
+        console.error("Error fetching SOL price:", error);
+        toast.error("Failed to fetch SOL price. Please try again.");
+      } finally {
+        setIsPriceFetching(false);
+      }
+    };
+
+    fetchSolPrice();
+  }, []);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -72,11 +149,21 @@ const CampaignForm = ({ onSuccess, onPreview }: CampaignFormProps) => {
     }
   };
 
+  const calculateSolAmount = (usdAmount: number): number => {
+    if (!solPrice) return 0;
+    return Number((usdAmount / solPrice).toFixed(4));
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!connected) {
       toast.error("Please connect your wallet first");
+      return;
+    }
+
+    if (!solPrice) {
+      toast.error("Unable to fetch SOL price. Please try again.");
       return;
     }
 
@@ -94,11 +181,23 @@ const CampaignForm = ({ onSuccess, onPreview }: CampaignFormProps) => {
         return;
       }
 
-      const targetAmount = new BN(parseFloat(formData.fundraisingGoal) * 1e9); // Convert to lamports
+      const usdAmount = parseFloat(formData.fundraisingGoalUSD);
 
-      // Validate target amount
+      // Validate USD amount
+      if (usdAmount < MIN_GOAL_USD || usdAmount > MAX_GOAL_USD) {
+        toast.error(
+          `Goal must be between $${MIN_GOAL_USD} and $${MAX_GOAL_USD}`
+        );
+        return;
+      }
+
+      // Convert USD to SOL
+      const solAmount = calculateSolAmount(usdAmount);
+      const targetAmount = new BN(solAmount * 1e9); // Convert to lamports
+
+      // Validate SOL target amount
       if (!validateCampaignTarget(targetAmount)) {
-        toast.error("Target amount is too low");
+        toast.error("Target amount in SOL is too low");
         return;
       }
 
@@ -210,21 +309,35 @@ const CampaignForm = ({ onSuccess, onPreview }: CampaignFormProps) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label
-                htmlFor="fundraisingGoal"
+                htmlFor="fundraisingGoalUSD"
                 className="block text-sm font-medium text-slate-200 mb-1"
               >
-                Fundraising Goal (SOL)
+                Fundraising Goal (USD)
               </label>
-              <input
-                type="number"
-                id="fundraisingGoal"
-                name="fundraisingGoal"
-                value={formData.fundraisingGoal}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-400"
-                placeholder="Enter target amount"
-                required
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  $
+                </span>
+                <input
+                  type="number"
+                  id="fundraisingGoalUSD"
+                  name="fundraisingGoalUSD"
+                  value={formData.fundraisingGoalUSD}
+                  onChange={handleInputChange}
+                  className="w-full pl-8 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-400"
+                  placeholder="Enter target amount in USD"
+                  min={MIN_GOAL_USD}
+                  max={MAX_GOAL_USD}
+                  required
+                />
+              </div>
+              {solPrice && formData.fundraisingGoalUSD && (
+                <p className="text-sm text-slate-400 mt-1">
+                  ≈ ◎
+                  {calculateSolAmount(parseFloat(formData.fundraisingGoalUSD))}{" "}
+                  SOL
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -351,13 +464,20 @@ const CampaignForm = ({ onSuccess, onPreview }: CampaignFormProps) => {
             <Button
               type="button"
               variant="outline"
-              onClick={onPreview}
-              disabled={loading}
+              onClick={handlePreviewClick}
+              disabled={loading || isPriceFetching}
             >
               Preview Campaign
             </Button>
-            <Button type="submit" disabled={loading || !connected}>
-              {loading ? "Creating..." : "Submit Campaign"}
+            <Button
+              type="submit"
+              disabled={loading || !connected || isPriceFetching}
+            >
+              {loading
+                ? "Creating..."
+                : isPriceFetching
+                ? "Loading..."
+                : "Submit Campaign"}
             </Button>
           </div>
         </div>

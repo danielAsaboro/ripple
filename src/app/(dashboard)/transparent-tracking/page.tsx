@@ -129,7 +129,7 @@ export default function TransparentTrackingPage() {
             <div>
               <h3 className="text-sm text-slate-400">Total Funds Received</h3>
               <p className="text-2xl font-bold text-white mt-2">
-                ◎{lamportsToSol(stats.totalFunds)}
+                ${lamportsToSol(stats.totalFunds)}
               </p>
               <p className="text-sm text-slate-400 mt-1">
                 {stats.totalDonations} Donations
@@ -146,7 +146,7 @@ export default function TransparentTrackingPage() {
             <div>
               <h3 className="text-sm text-slate-400">Allocated Funds</h3>
               <p className="text-2xl font-bold text-white mt-2">
-                ◎{lamportsToSol(stats.allocatedFunds)}
+                ${lamportsToSol(stats.allocatedFunds)}
               </p>
               <p className="text-sm text-slate-400 mt-1">
                 {Object.keys(allocationsByCategory).length} Categories
@@ -163,7 +163,7 @@ export default function TransparentTrackingPage() {
             <div>
               <h3 className="text-sm text-slate-400">Remaining Funds</h3>
               <p className="text-2xl font-bold text-white mt-2">
-                ◎{lamportsToSol(stats.remainingFunds)}
+                ${lamportsToSol(stats.remainingFunds)}
               </p>
               <p className="text-sm text-slate-400 mt-1">
                 {(
@@ -247,7 +247,7 @@ export default function TransparentTrackingPage() {
                     {category.replace(/([A-Z])/g, " $1").trim()}
                   </td>
                   <td className="p-4 text-white">
-                    ◎{lamportsToSol(data.amount)}
+                    ${lamportsToSol(data.amount)}
                   </td>
                   <td className="p-4 text-white">
                     {data.percentage.toFixed(1)}%
@@ -321,7 +321,7 @@ export default function TransparentTrackingPage() {
                     {tx.donor.toString().slice(-4)}
                   </td>
                   <td className="p-4 text-white">
-                    ◎{lamportsToSol(tx.amount)}
+                    ${lamportsToSol(tx.amount)}
                   </td>
                   <td className="p-4 text-white">
                     {new Date(

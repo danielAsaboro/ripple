@@ -37,9 +37,6 @@ export const PreferencesTab = () => {
               setPreferences((prev) => ({ ...prev, donationReceipts: checked }))
             }
           />
-          <Button className="text-green-400 hover:text-green-500">
-            Save Changes
-          </Button>
         </div>
       </SettingsSection>
 
@@ -78,6 +75,10 @@ export const PreferencesTab = () => {
           </div>
         </div>
       </SettingsSection>
+
+      <div className="flex justify-end">
+        <Button className="">Save Changes</Button>
+      </div>
     </div>
   );
 };

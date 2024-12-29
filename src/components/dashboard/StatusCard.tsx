@@ -105,7 +105,7 @@ const StatusCard = ({
     if (isSol) {
       const solValue =
         value instanceof BN ? lamportsToSol(value) : Number(value);
-      return `◎${solValue.toFixed(2)}`;
+      return `$${solValue.toFixed(2)}`;
     }
     return value.toString();
   }, [value, isSol, loading]);

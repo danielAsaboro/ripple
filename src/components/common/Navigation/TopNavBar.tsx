@@ -11,11 +11,11 @@ export default function TopNavBar() {
         <Image
           src="/logo.svg"
           alt="Rippl"
-          className="h-8 w-8"
-          width={8}
-          height={8}
+          className="h-16 w-32"
+          width={16}
+          height={16}
         />
-        <span className="text-xl font-bold text-white">Rippl</span>
+        {/* <span className="text-xl font-bold text-white">Rippl</span> */}
       </Link>
 
       <nav className="hidden md:flex items-center space-x-8 text-slate-200">

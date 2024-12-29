@@ -107,11 +107,10 @@ const Sidebar = ({ className }: SidebarProps) => {
           <Image
             src="/logo.svg"
             alt="Rippl"
-            className="h-8 w-8"
+            className="h-16 w-24"
             width={8}
             height={8}
           />
-          <span className="text-xl font-bold text-white">Rippl</span>
         </Link>
       </div>
 
@@ -129,8 +128,8 @@ const Sidebar = ({ className }: SidebarProps) => {
       <Link
         href="/start-campaign"
         className={cn(
-          "mt-6 flex items-center gap-2 rounded-lg px-3 py-2",
-          "bg-white text-green-400 hover:bg-slate-100",
+          "mt-6 flex items-center gap-2 rounded-lg px-3 py-2 outline-0",
+          "border-2 border-green-400 bg-transparent text-green-400 hover:bg-green-400 hover:text-white",
           "transition-colors duration-200",
           pathname === "/start-campaign" &&
             "bg-green-400 text-white hover:bg-green-500"
@@ -139,7 +138,6 @@ const Sidebar = ({ className }: SidebarProps) => {
         <Plus className="h-5 w-5" />
         <span>Start a Campaign</span>
       </Link>
-
 
       <div className="mt-auto space-y-2">
         {bottomNavigationItems.map((item) => (

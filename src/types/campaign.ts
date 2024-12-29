@@ -33,6 +33,10 @@ export interface Campaign {
   isUrgent: boolean;
   bump: number;
 }
+export interface CampaignWithKey {
+  publicKey: PublicKey;
+  account: Campaign;
+}
 
 export interface UpdateCampaignParams {
   description: string | null;
