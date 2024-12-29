@@ -5,19 +5,26 @@ import Card from "@/components/common/Card";
 import Button from "@/components/common/Button";
 import { MoreVertical, Download } from "lucide-react";
 import { useProgram } from "@/hooks/useProgram";
-import { Campaign, Donation, CampaignStatus } from "@/types";
+import { Campaign, Donation, CampaignStatus, getDominantStatus } from "@/types";
 import { lamportsToSol } from "@/utils/format";
 import { toast } from "react-hot-toast";
 import { BN } from "@coral-xyz/anchor";
 import _ from "lodash";
+import {
+  getSolPrice,
+  lamportsToUSD,
+  convertSolToUSDWithPrice,
+} from "@/utils/currency";
 
 export default function TransparentTrackingPage() {
   const { program } = useProgram();
   const [loading, setLoading] = React.useState(true);
+  const [currentSolPrice, setCurrentSolPrice] = React.useState<number>(0);
+
   const [stats, setStats] = React.useState({
-    totalFunds: new BN(0),
-    allocatedFunds: new BN(0),
-    remainingFunds: new BN(0),
+    totalFunds: 0,
+    allocatedFunds: 0,
+    remainingFunds: 0,
     totalDonations: 0,
   });
   const [allocationsByCategory, setAllocationsByCategory] = React.useState<{
@@ -33,6 +40,8 @@ export default function TransparentTrackingPage() {
   React.useEffect(() => {
     const fetchData = async () => {
       if (!program) return;
+      const solPrice = await getSolPrice();
+      setCurrentSolPrice(solPrice);
 
       try {
         // Fetch all campaigns
@@ -76,14 +85,14 @@ export default function TransparentTrackingPage() {
               ) / campaigns.length;
 
             // Get the dominant status
-            const statuses = campaigns.map((c) => c.status);
-            const dominantStatus = _.maxBy(
-              Object.entries(_.countBy(statuses)),
-              "[1]"
-            )?.[0];
+            const statuses: CampaignStatus[] = campaigns.map((c) => c.status);
+
+            const dominantStatus = getDominantStatus(statuses);
 
             acc[category] = {
-              amount,
+              amount: new BN(
+                convertSolToUSDWithPrice(amount.toNumber(), solPrice)
+              ),
               percentage,
               progress,
               status: dominantStatus || { active: {} },
@@ -94,9 +103,18 @@ export default function TransparentTrackingPage() {
         );
 
         setStats({
-          totalFunds,
-          allocatedFunds,
-          remainingFunds,
+          totalFunds: convertSolToUSDWithPrice(
+            lamportsToSol(totalFunds),
+            solPrice
+          ),
+          allocatedFunds: convertSolToUSDWithPrice(
+            lamportsToSol(allocatedFunds),
+            solPrice
+          ),
+          remainingFunds: convertSolToUSDWithPrice(
+            lamportsToSol(remainingFunds),
+            solPrice
+          ),
           totalDonations: donations.length,
         });
         setAllocationsByCategory(allocations);
@@ -129,7 +147,7 @@ export default function TransparentTrackingPage() {
             <div>
               <h3 className="text-sm text-slate-400">Total Funds Received</h3>
               <p className="text-2xl font-bold text-white mt-2">
-                ${lamportsToSol(stats.totalFunds)}
+                ${stats.totalFunds.toFixed(2)}
               </p>
               <p className="text-sm text-slate-400 mt-1">
                 {stats.totalDonations} Donations
@@ -146,7 +164,7 @@ export default function TransparentTrackingPage() {
             <div>
               <h3 className="text-sm text-slate-400">Allocated Funds</h3>
               <p className="text-2xl font-bold text-white mt-2">
-                ${lamportsToSol(stats.allocatedFunds)}
+                ${stats.allocatedFunds.toFixed(2)}
               </p>
               <p className="text-sm text-slate-400 mt-1">
                 {Object.keys(allocationsByCategory).length} Categories
@@ -163,15 +181,11 @@ export default function TransparentTrackingPage() {
             <div>
               <h3 className="text-sm text-slate-400">Remaining Funds</h3>
               <p className="text-2xl font-bold text-white mt-2">
-                ${lamportsToSol(stats.remainingFunds)}
+                ${stats.remainingFunds.toFixed(2)}
               </p>
               <p className="text-sm text-slate-400 mt-1">
-                {(
-                  (stats.remainingFunds.toNumber() /
-                    stats.totalFunds.toNumber()) *
-                  100
-                ).toFixed(1)}
-                % Unallocated
+                {((stats.remainingFunds / stats.totalFunds) * 100).toFixed(1)}%
+                Unallocated
               </p>
             </div>
             <button className="text-slate-400 hover:text-slate-300">
@@ -247,10 +261,10 @@ export default function TransparentTrackingPage() {
                     {category.replace(/([A-Z])/g, " $1").trim()}
                   </td>
                   <td className="p-4 text-white">
-                    ${lamportsToSol(data.amount)}
+                    ${lamportsToSol(data.amount).toFixed(2)}
                   </td>
                   <td className="p-4 text-white">
-                    {data.percentage.toFixed(1)}%
+                    {data.percentage.toFixed(2)}%
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-4">
@@ -321,7 +335,11 @@ export default function TransparentTrackingPage() {
                     {tx.donor.toString().slice(-4)}
                   </td>
                   <td className="p-4 text-white">
-                    ${lamportsToSol(tx.amount)}
+                    $
+                    {convertSolToUSDWithPrice(
+                      lamportsToSol(tx.amount),
+                      currentSolPrice
+                    ).toFixed(2)}
                   </td>
                   <td className="p-4 text-white">
                     {new Date(

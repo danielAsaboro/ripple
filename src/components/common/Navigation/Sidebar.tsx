@@ -15,6 +15,7 @@ import {
   Settings,
   HelpCircle,
   LogOut,
+  BanknoteIcon,
 } from "lucide-react";
 import Image from "next/image";
 import LogoutModal from "@/components/auth/LogoutModal";
@@ -49,6 +50,11 @@ const navigationItems = [
     title: "My Donations",
     icon: Wallet,
     href: "/my-donations",
+  },
+  {
+    title: "Withdraw Funds",
+    icon: BanknoteIcon,
+    href: "/withdraw",
   },
 ];
 

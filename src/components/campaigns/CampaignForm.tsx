@@ -14,6 +14,7 @@ import {
   validateCampaignDuration,
   validateCampaignTarget,
 } from "@/utils/validation";
+import { pinata } from "@/utils/pinata";
 
 interface CampaignFormData {
   title: string;
@@ -55,6 +56,7 @@ const CampaignForm = ({
   const { createCampaign, loading, error } = useCreateCampaign();
   const [solPrice, setSolPrice] = useState<number | null>(null);
   const [isPriceFetching, setIsPriceFetching] = useState(true);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const [formData, setFormData] = useState<CampaignFormData>(() => ({
     title: "",
@@ -137,15 +139,55 @@ const CampaignForm = ({
   };
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // In production, you'd upload to IPFS/Arweave here
-      const fakeUrl = URL.createObjectURL(file);
-      setImagePreview(fakeUrl);
-      setFormData((prev) => ({
-        ...prev,
-        imageUrl: fakeUrl,
-      }));
+    try {
+      const file = e.target.files?.[0];
+      if (file) {
+        const fakeUrl = URL.createObjectURL(file);
+        setImagePreview(fakeUrl);
+        setIsUploadingImage(true);
+        const { IpfsHash } = await uploadFile(file);
+        setIsUploadingImage(false);
+        setFormData((prev) => ({
+          ...prev,
+          imageUrl: IpfsHash,
+        }));
+      }
+    } catch (error) {
+      //
+      console.log("error form handling file", e);
+      setIsUploadingImage(false);
+      toast.error("Trouble from handling  file");
+    }
+  };
+
+  const uploadFile = async (fileToUpload: File): Promise<any> => {
+    try {
+      const formData = new FormData();
+      formData.append("file", fileToUpload, fileToUpload.name);
+      formData.append("group_id", "public");
+      const jwtRes = await fetch("/api/generate-pinata-upload-link", {
+        method: "POST",
+      });
+      const { jwt: jsonResponse } = await jwtRes.json();
+      const JWT = jsonResponse;
+
+      const res = await fetch(
+        "https://api.pinata.cloud/pinning/pinFileToIPFS",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${JWT}`,
+          },
+          body: formData,
+        }
+      );
+      const jsonData = await res.json();
+      return jsonData;
+    } catch (e) {
+      console.log("error form uploading file", e);
+      setIsUploadingImage(false);
+      toast.error("Trouble uploading file");
+      throw e;
     }
   };
 

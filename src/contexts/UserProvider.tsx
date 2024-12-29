@@ -180,15 +180,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   useEffect(() => {
     if (!program || !publicKey) return;
 
-    // const eventListener = program.addEventListener(
-    //   "userUpdated",
-    //   async (event: any) => {
-    //     if (event.authority.equals(publicKey)) {
-    //       await fetchUser();
-    //     }
-    //   }
-    // );
-
+    
     return () => {
       // program.removeEventListener(eventListener);
     };

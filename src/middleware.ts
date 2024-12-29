@@ -47,7 +47,7 @@ export const config = {
     "/active-campaigns/:path*",
     "/transparent-tracking/:path*",
     "/start-campaign/:path*",
-    "/campaign/:path*/donate",
+    "/campaigns/:path*/donate",
     "/my-donations/:path*",
     "/support/:path*",
   ],

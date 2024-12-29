@@ -1,4 +1,3 @@
-// File: /app/(dashboard)/dashboard/page.tsx
 "use client";
 import React, { useEffect, useState } from "react";
 import { useUserProfile } from "@/hooks/useUser/useUserProfile";
@@ -6,82 +5,114 @@ import { useBadges } from "@/hooks/useUser/useBadges";
 import { useDonationHistory } from "@/hooks/useDonation";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { findUserPDA } from "@/utils/pdas";
-import StatusCard from "@/components/dashboard/StatusCard";
-import DonationChart from "@/components/dashboard/DonationChart";
-import ImpactMetrics from "@/components/dashboard/ImpactMetrics";
-import CampaignCard from "@/components/dashboard/CampaignCard";
+import DonationChart from "@/components/donation/shared/DonationChart";
+import CampaignCard from "@/components/campaigns/CampaignCard";
 import { getBadgeTypeString } from "@/types/badge";
 import { lamportsToSol } from "@/utils/format";
-import { getSolPrice, lamportsToUSD } from "@/utils/currency";
+import {
+  convertSolToUSDWithPrice,
+  getSolPrice,
+} from "@/utils/currency";
+import StatusCard from "@/components/shared/StatusCard";
+import ImpactMetrics from "@/components/impact/ImpactMetrics";
+import { PublicKey } from "@solana/web3.js";
+
+interface PageState {
+  isLoading: boolean;
+  solPrice: number;
+  totalDonationInUSD: number;
+  userPda?: PublicKey;
+}
 
 export default function DashboardPage() {
   const { publicKey: authority } = useWallet();
-  const userPDA = authority ? findUserPDA(authority)[0] : undefined;
-  const [solPrice, setSolPrice] = useState<number>(0);
+  const [pageState, setPageState] = useState<PageState>({
+    isLoading: true,
+    solPrice: 0,
+    totalDonationInUSD: 0,
+  });
 
   const { profile, loading: profileLoading } = useUserProfile({
-    authority,
+    authority: authority ?? undefined,
     includeCampaigns: true,
   });
 
   const {
-    badges,
-    totalDonationValue,
+    badges = [],
+    totalDonationValue = 0,
     loading: badgesLoading,
+    error: badgesError,
   } = useBadges({
-    userPDA,
+    userPDA: pageState.userPda,
   });
 
   const { donations, loading: donationsLoading } = useDonationHistory({
-    userPDA,
+    userPDA: pageState.userPda,
   });
 
-  // Fetch SOL price
   useEffect(() => {
-    const fetchSolPrice = async () => {
-      const price = await getSolPrice();
-      setSolPrice(price);
+    const initializePageState = async () => {
+      if (!authority) return;
+
+      try {
+        const [userPDA] = await findUserPDA(authority);
+        const price = await getSolPrice();
+
+        setPageState(prev => ({
+          ...prev,
+          userPda: userPDA,
+          solPrice: price,
+          isLoading: false,
+          totalDonationInUSD: totalDonationValue ? 
+            convertSolToUSDWithPrice(lamportsToSol(totalDonationValue), price) : 0
+        }));
+      } catch (error) {
+        console.error("Error initializing page state:", error);
+        setPageState(prev => ({ ...prev, isLoading: false }));
+      }
     };
-    fetchSolPrice();
-  }, []);
-  // Calculate changes (you'd replace this with actual historical data)
-  const donationChange = {
-    type: "increase" as const,
-    value: "12%",
-    text: `+$${(
-      lamportsToUSD(totalDonationValue || 0, solPrice) * 0.12
-    ).toFixed(2)}`,
-  };
+
+    initializePageState();
+  }, [authority, totalDonationValue]);
 
   if (!authority) {
     return (
       <div className="text-center py-20">
-        <h2 className="text-2xl font-bold text-white mb-4">
-          Welcome to Ripple
-        </h2>
-        <p className="text-slate-400">
-          Please connect your wallet to view your dashboard
-        </p>
+        <h2 className="text-2xl font-bold text-white mb-4">Welcome to Ripple</h2>
+        <p className="text-slate-400">Please connect your wallet to view your dashboard</p>
       </div>
     );
   }
 
-  if (profileLoading || badgesLoading || donationsLoading) {
+  const isPageLoading = profileLoading || badgesLoading || donationsLoading || pageState.isLoading;
+
+  if (isPageLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-green-400"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-green-400" />
+      </div>
+    );
+  }
+
+  if (badgesError) {
+    return (
+      <div className="text-center py-20">
+        <h2 className="text-2xl font-bold text-white mb-4">Error Loading Dashboard</h2>
+        <p className="text-slate-400">
+          {badgesError.message || "Failed to load badges. Please try again."}
+        </p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Top Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <StatusCard
           title="Total Funds Donated"
-          value={lamportsToUSD(totalDonationValue || 0, solPrice)}
-          change={donationChange}
+          value={pageState.totalDonationInUSD}
+          prefix="$"
+          loading={pageState.isLoading}
           footer={{
             text: "View Report",
             onClick: () => (window.location.href = "/donations"),
@@ -89,7 +120,7 @@ export default function DashboardPage() {
         />
         <StatusCard
           title="Campaigns Supported"
-          value={profile?.campaignsSupported || 0}
+          value={profile?.campaignsSupported ?? 0}
           footer={{
             text: "View Campaigns",
             onClick: () => (window.location.href = "/active-campaigns"),
@@ -99,9 +130,7 @@ export default function DashboardPage() {
           title="Current Badge"
           value={
             profile?.badges?.length
-              ? getBadgeTypeString(
-                  profile.badges[profile.badges.length - 1].badgeType
-                )
+              ? getBadgeTypeString(profile.badges[profile.badges.length - 1].badgeType)
               : "No Badge Yet"
           }
           footer={{
@@ -111,40 +140,29 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Middle Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <DonationChart />
         <ImpactMetrics />
       </div>
 
-      {/* Recent Activity & Recognition */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2">
           <div className="bg-slate-800 rounded-lg p-6 space-y-4">
-            <h3 className="text-lg font-semibold text-white">
-              Recent Activities
-            </h3>
+            <h3 className="text-lg font-semibold text-white">Recent Activities</h3>
             <div className="space-y-4">
               {donations?.slice(0, 4).map((donation, index) => (
                 <p key={index} className="text-slate-300">
-                  You donated ◎{lamportsToSol(donation.amount)} to{" "}
-                  {donation.campaign.toString()} on{" "}
-                  {new Date(
-                    donation.timestamp.toNumber() * 1000
-                  ).toLocaleDateString()}
+                  You donated ◎{lamportsToSol(donation.amount)} to {donation.campaign.toString()} on{" "}
+                  {new Date(donation.timestamp.toNumber() * 1000).toLocaleDateString()}
                 </p>
               ))}
-              {(!donations || donations.length === 0) && (
-                <p className="text-slate-400">No recent donations</p>
-              )}
+              {(!donations?.length) && <p className="text-slate-400">No recent donations</p>}
             </div>
           </div>
         </div>
 
         <div className="bg-slate-800 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">
-            Badges Earned
-          </h3>
+          <h3 className="text-lg font-semibold text-white mb-4">Badges Earned</h3>
           <div className="space-y-4">
             {badges.map((badge, index) => (
               <div key={index} className="flex items-center gap-3">
@@ -152,58 +170,42 @@ export default function DashboardPage() {
                   {index + 1}
                 </div>
                 <div>
-                  <p className="text-white">
-                    {getBadgeTypeString(badge.badgeType)}
-                  </p>
+                  <p className="text-white">{getBadgeTypeString(badge.badgeType)}</p>
                   <p className="text-sm text-slate-400">
-                    Earned on{" "}
-                    {new Date(
-                      badge.dateEarned.toNumber() * 1000
-                    ).toLocaleDateString()}
+                    Earned on {new Date(badge.dateEarned.toNumber() * 1000).toLocaleDateString()}
                   </p>
                 </div>
               </div>
             ))}
-            {badges.length === 0 && (
-              <p className="text-slate-400">No badges earned yet</p>
-            )}
+            {!badges.length && <p className="text-slate-400">No badges earned yet</p>}
           </div>
         </div>
       </div>
 
-      {/* Active Campaigns */}
-      {profile?.supportedCampaigns && profile.supportedCampaigns.length > 0 && (
+      {profile?.supportedCampaigns?.length! > 0 && (
         <div>
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-white">
-              Your Active Campaigns
-            </h2>
-            <a href="/active-campaigns" className="text-green-400">
-              View All
-            </a>
+            <h2 className="text-xl font-semibold text-white">Your Active Campaigns</h2>
+            <a href="/active-campaigns" className="text-green-400">View All</a>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {profile.supportedCampaigns.slice(0, 2).map((campaign) => (
+            {profile?.supportedCampaigns?.slice(0, 2).map((campaign) => (
               <CampaignCard
                 key={campaign.title}
                 id={campaign.title}
                 title={campaign.title}
                 organization={campaign.organizationName}
                 image={campaign.imageUrl}
-                target={lamportsToUSD(
-                  campaign.targetAmount.toNumber(),
-                  solPrice
+                target={convertSolToUSDWithPrice(
+                  lamportsToSol(campaign.targetAmount.toNumber()),
+                  pageState.solPrice
                 )}
-                raised={lamportsToUSD(
-                  campaign.raisedAmount.toNumber(),
-                  solPrice
+                raised={convertSolToUSDWithPrice(
+                  lamportsToSol(campaign.raisedAmount.toNumber()),
+                  pageState.solPrice
                 )}
                 progress={Number(
-                  (
-                    (campaign.raisedAmount.toNumber() /
-                      campaign.targetAmount.toNumber()) *
-                    100
-                  ).toFixed(2)
+                  ((campaign.raisedAmount.toNumber() / campaign.targetAmount.toNumber()) * 100).toFixed(2)
                 )}
                 donationsCount={campaign.donorsCount}
                 isUrgent={campaign.isUrgent}

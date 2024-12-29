@@ -1,4 +1,3 @@
-
 // File: /components/campaigns/CampaignGrid.tsx
 "use client";
 import React, { useState } from "react";
@@ -11,7 +10,6 @@ import { CampaignWithKey } from "@/types";
 import { calculateProgress, formatDate, lamportsToSol } from "@/utils/format";
 import { DonateModal } from "../donation/modal/DonateModal";
 import { useRouter } from "next/navigation";
-import { ExternalLink } from "lucide-react";
 
 interface CampaignGridProps {
   campaigns: CampaignWithKey[];
@@ -19,8 +17,6 @@ interface CampaignGridProps {
 }
 
 const CampaignGrid = ({ campaigns, onShare }: CampaignGridProps) => {
-  const { connected } = useWallet();
-  const router = useRouter();
   const [selectedCampaign, setSelectedCampaign] =
     useState<CampaignWithKey | null>(null);
 
@@ -97,7 +93,10 @@ const CampaignGrid = ({ campaigns, onShare }: CampaignGridProps) => {
                       <span>{campaign.donorsCount} Donors</span>
                     </div>
                     <div className="text-slate-400">
-                      <span>{daysRemaining} Days Left</span>
+                      <span>
+                        {Math.abs(daysRemaining)} Days{" "}
+                        {daysRemaining >= 0 ? "Left" : "Ago"}
+                      </span>
                     </div>
                   </div>
 
@@ -128,7 +127,7 @@ const CampaignGrid = ({ campaigns, onShare }: CampaignGridProps) => {
           isOpen={!!selectedCampaign}
           onClose={() => setSelectedCampaign(null)}
           campaign={selectedCampaign}
-          fullPageUrl={`/campaign/${selectedCampaign.publicKey.toBase58()}/donate`}
+          fullPageUrl={`/campaigns/${selectedCampaign.publicKey.toBase58()}/donate`}
         />
       )}
     </>

@@ -1,9 +1,15 @@
 // File: /app/api/webhook-events/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { headers } from 'next/headers';
+import { ServerEvent } from "@/types/events";
+import { createISOTimestamp } from "@/utils/date";
 
-// Keep track of connected clients
 let clients = new Set<ReadableStreamDefaultController>();
+const encoder = new TextEncoder();
+
+const removeClient = (controller: ReadableStreamDefaultController) => {
+  clients.delete(controller);
+  console.log(`Client disconnected. Remaining clients: ${clients.size}`);
+};
 
 export async function GET(req: NextRequest) {
   console.log("New SSE connection attempt...");
@@ -13,66 +19,63 @@ export async function GET(req: NextRequest) {
       clients.add(controller);
       console.log(`Client connected. Total clients: ${clients.size}`);
 
-      // Send initial connection message
-      const initialMessage = `data: ${JSON.stringify({
-        type: 'connection',
-        message: 'Connected to server',
-        timestamp: new Date().toISOString()
-      })}\n\n`;
+      const initialMessage: ServerEvent = {
+        type: "connection",
+        status: "connected",
+        timestamp: createISOTimestamp(),
+        clientCount: clients.size,
+      };
 
-      controller.enqueue(new TextEncoder().encode(initialMessage));
-
-      // Remove client when connection closes
-      req.signal.addEventListener('abort', () => {
-        clients.delete(controller);
-        console.log(`Client disconnected. Remaining clients: ${clients.size}`);
-      });
+      controller.enqueue(
+        encoder.encode(`data: ${JSON.stringify(initialMessage)}\n\n`)
+      );
+      req.signal.addEventListener("abort", () => removeClient(controller));
     },
     cancel() {
-      // Handle stream cancellation
       console.log("Stream cancelled by client");
-    }
+    },
   });
 
   return new NextResponse(stream, {
     headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache, no-transform',
-      'Connection': 'keep-alive',
-      'Transfer-Encoding': 'chunked',
-      'Access-Control-Allow-Origin': '*',
-      'X-Accel-Buffering': 'no' // Disable Nginx buffering
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "Transfer-Encoding": "chunked",
+      "Access-Control-Allow-Origin": "*",
+      "X-Accel-Buffering": "no",
     },
   });
 }
 
-export function broadcastEvent(data: any) {
+export function broadcastEvent(data: ServerEvent) {
   console.log(`Broadcasting event to ${clients.size} clients:`, data);
-  
+
   const event = `data: ${JSON.stringify(data)}\n\n`;
-  const encoder = new TextEncoder();
-  
-  clients.forEach(client => {
+  const encodedEvent = encoder.encode(event);
+
+  clients.forEach((client) => {
     try {
-      client.enqueue(encoder.encode(event));
-      console.log('Event sent successfully to client');
+      client.enqueue(encodedEvent);
     } catch (error) {
-      console.error('Error sending event to client:', error);
-      clients.delete(client);
+      console.error("Error sending event to client:", error);
+      removeClient(client);
     }
   });
 }
 
-// Keep connection alive
+const PING_INTERVAL = 30000;
 setInterval(() => {
   if (clients.size > 0) {
-    const ping = `data: ${JSON.stringify({ type: 'ping', timestamp: new Date().toISOString() })}\n\n`;
-    clients.forEach(client => {
-      try {
-        client.enqueue(new TextEncoder().encode(ping));
-      } catch (error) {
-        clients.delete(client);
-      }
-    });
+    const ping: ServerEvent = {
+      type: "ping",
+      timestamp: createISOTimestamp(),
+    };
+    broadcastEvent(ping);
   }
-}, 30000); // Send ping every 30 seconds
+}, PING_INTERVAL);
+
+const MONITORING_INTERVAL = 60000;
+setInterval(() => {
+  console.log(`Active SSE clients: ${clients.size}`);
+}, MONITORING_INTERVAL);

@@ -1,6 +1,6 @@
 // File: /app/(dashboard)/donor-recognition/page.tsx
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Card from "@/components/common/Card";
 import Button from "@/components/common/Button";
 import { Clock } from "lucide-react";
@@ -12,6 +12,8 @@ import { BADGE_THRESHOLDS } from "@/utils/constants";
 import { lamportsToSol } from "@/utils/format";
 import { getBadgeTypeString } from "@/types/badge";
 import { toast } from "react-hot-toast";
+import { PublicKey } from "@solana/web3.js";
+import { convertSolToUSDWithPrice, getSolPrice } from "@/utils/currency";
 
 export default function DonorRecognitionPage() {
   const { publicKey: authority } = useWallet();
@@ -19,14 +21,45 @@ export default function DonorRecognitionPage() {
   const [loading, setLoading] = React.useState(true);
   const [leaderboard, setLeaderboard] = React.useState<any[]>([]);
   const [recentDonations, setRecentDonations] = React.useState<any[]>([]);
+  const [userPda, setUserPda] = useState<PublicKey | undefined>(undefined);
+  const [solPrice, setSolPrice] = useState<number>(0);
+
+  useEffect(() => {
+    const fetchUserPda = async () => {
+      if (authority) {
+        const [userPDA] = await findUserPDA(authority);
+        if (userPDA) setUserPda(userPDA);
+      }
+    };
+
+    fetchUserPda();
+  }, [authority]);
+
+  // Fetch SOL price
+  useEffect(() => {
+    const fetchSolPrice = async () => {
+      try {
+        const price = await getSolPrice();
+        setSolPrice(price);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching SOL price:", error);
+        setLoading(false);
+      }
+    };
+    fetchSolPrice();
+  }, []);
 
   // Get current user's badges
-  const userPDA = authority ? findUserPDA(authority)[0] : undefined;
+  // const userPDA = authority ? findUserPDA(authority)[0] : undefined;
   const {
-    badges,
-    totalDonationValue,
+    badges = [],
+    totalDonationValue = 0,
     loading: badgesLoading,
-  } = useBadges({ userPDA });
+    error: badgesError,
+  } = useBadges({
+    userPDA: userPda,
+  });
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -186,7 +219,11 @@ export default function DonorRecognitionPage() {
                     <td className="py-4 text-white">{index + 1}</td>
                     <td className="py-4 text-white">{donor.name}</td>
                     <td className="py-4 text-white">
-                      ◎{donor.totalDonation.toFixed(2)}
+                      $
+                      {convertSolToUSDWithPrice(
+                        donor.totalDonation,
+                        solPrice
+                      ).toFixed(2)}
                     </td>
                     <td className="py-4 text-white">{donor.impactedLives}+</td>
                   </tr>

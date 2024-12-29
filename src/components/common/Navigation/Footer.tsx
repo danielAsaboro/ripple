@@ -36,6 +36,11 @@ export default function Footer() {
                 </a>
               </li>
               <li>
+                <a href="/campaigns/live" className="hover:text-green-400">
+                  Donate
+                </a>
+              </li>
+              <li>
                 <a href="/about" className="hover:text-green-400">
                   About Us
                 </a>
@@ -80,7 +85,9 @@ export default function Footer() {
           </div>
 
           <div>
-            <h3 className="text-white font-semibold mb-4 text-start">Stay Updated</h3>
+            <h3 className="text-white font-semibold mb-4 text-start">
+              Stay Updated
+            </h3>
             <div className="flex gap-2">
               <input
                 type="email"

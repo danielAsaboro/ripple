@@ -31,50 +31,45 @@ export const useBadges = ({ userPDA }: UseBadgesProps): BadgeSystem => {
   const [totalDonationValue, setTotalDonationValue] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  let badgeAwardEventNumber: number;
 
   const fetchBadges = useCallback(async () => {
-    if (!program || (!userPDA && !authority)) return;
+    if (!program || !userPDA) {
+      console.log("Missing requirements:", {
+        program: !!program,
+        userPDA: !!userPDA,
+      });
+      return;
+    }
 
     setLoading(true);
     setError(null);
 
     try {
-      const user = await program.account.user.fetch(userPDA!);
-      setBadges(user.badges);
-      setTotalDonationValue(user.totalDonations.toNumber());
+      console.log("Fetching badges for userPDA:", userPDA.toString());
 
-      // badgeAwardEventNumber = program.addEventListener(
-      //   "badgeAwarded",
-      //   (event: any) => {
-      //     if (event.user.equals(userPDA)) {
-      //       refreshBadges();
-      //       toast.success(
-      //         `New badge earned: ${getBadgeTypeName(event.badgeType)}`
-      //       );
-      //     }
-      //   }
-      // );
+      const user = await program.account.user.fetch(userPDA);
+      console.log("User account data:", user);
+
+      setBadges(user.badges || []);
+      setTotalDonationValue(user.totalDonations?.toNumber() || 0);
     } catch (err) {
       console.error("Error fetching badges:", err);
       setError(err as Error);
-      toast.error("Failed to load badges");
+      toast.error("Failed to load badges. Please try again.");
+
+      // Set default values on error
+      setBadges([]);
+      setTotalDonationValue(0);
     } finally {
       setLoading(false);
     }
-  }, [program, userPDA, authority]);
+  }, [program, userPDA,]);
 
   // Initial fetch
   useEffect(() => {
     if (program) {
       fetchBadges();
     }
-
-    return () => {
-      if (program) {
-        // program.removeEventListener(badgeAwardEventNumber);
-      }
-    };
   }, [program, userPDA, authority, fetchBadges]);
 
   // Check if user has a specific badge

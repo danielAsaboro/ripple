@@ -2,6 +2,7 @@
 
 import { BN } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
+import _ from "lodash";
 
 export type CampaignCategory =
   | { healthcare: Record<string, never> }
@@ -16,6 +17,35 @@ export type CampaignStatus =
   | { inProgress: Record<string, never> }
   | { completed: Record<string, never> }
   | { expired: Record<string, never> };
+
+// Helper function to get status key
+export function getStatusKey(status: CampaignStatus): string {
+  return Object.keys(status)[0];
+}
+
+// Function to get dominant status from an array of campaign statuses
+export function getDominantStatus(statuses: CampaignStatus[]): CampaignStatus {
+  // Map complex status objects to their keys (e.g., "active", "inProgress", etc.)
+  const statusKeys = statuses.map(getStatusKey);
+
+  // Count occurrences of each status
+  const statusCounts = _.countBy(statusKeys);
+
+  // Find the status with the highest count
+  const dominantStatusKey =
+    _.maxBy(Object.entries(statusCounts), ([_, count]) => count)?.[0] ??
+    "active"; // Default to 'active' if no statuses exist
+
+  // Convert the dominant status key back to a CampaignStatus object
+  const statusMap: Record<string, CampaignStatus> = {
+    active: { active: {} },
+    inProgress: { inProgress: {} },
+    completed: { completed: {} },
+    expired: { expired: {} },
+  };
+
+  return statusMap[dominantStatusKey];
+}
 
 export interface Campaign {
   authority: PublicKey;

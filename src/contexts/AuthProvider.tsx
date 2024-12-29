@@ -50,11 +50,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       try {
-        const userRoles = await AuthService.getUserRoles(
-          publicKey,
-          user.totalDonations,
-          user.campaignsSupported
-        );
+        const userRoles = await AuthService.getUserRoles(publicKey);
         setRoles(userRoles);
       } catch (error) {
         console.error("Error updating roles:", error);
@@ -75,10 +71,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     switch (permission) {
       case "createCampaign":
-        return AuthService.canCreateCampaign(
-          user.totalDonations,
-          user.campaignsSupported
-        );
+        if (!targetPublicKey) return false;
+        return true;
 
       case "modifyCampaign":
         if (!targetPublicKey) return false;
@@ -104,7 +98,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isInitialized: initialized,
     roles,
     isAdmin: roles.includes(UserRole.ADMIN),
-    canCreateCampaigns: roles.includes(UserRole.CAMPAIGN_CREATOR),
+    canCreateCampaigns: true,
     checkPermission,
     loading,
   };

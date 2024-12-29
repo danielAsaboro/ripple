@@ -15,12 +15,28 @@ export async function getSolPrice(): Promise<number> {
   }
 }
 
-export function lamportsToUSD(lamports: number | BN, solPrice: number): number {
-  const solAmount = lamportsToSol(lamports);
-  return solAmount * solPrice;
+export async function lamportsToUSD(lamports: number | BN): Promise<number> {
+  try {
+    const solAmount = lamportsToSol(lamports);
+    return await solToUSD(solAmount);
+  } catch (error) {
+    throw error;
+  }
 }
 
-export function solToUSD(sol: number, solPrice: number): number {
+export async function solToUSD(sol: number): Promise<number> {
+  try {
+    const solPrice = await getSolPrice();
+    return sol * solPrice;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export function convertSolToUSDWithPrice(
+  sol: number,
+  solPrice: number
+): number {
   return sol * solPrice;
 }
 

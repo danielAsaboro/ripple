@@ -1,7 +1,7 @@
 // File: /app/(dashboard)/donations/page.tsx
 "use client";
-import React from "react";
-import StatusCard from "@/components/dashboard/StatusCard";
+import React, { useEffect, useState } from "react";
+import StatusCard from "@/components/shared/StatusCard";
 import Card from "@/components/common/Card";
 import { Download } from "lucide-react";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -10,10 +10,12 @@ import { useUserProfile } from "@/hooks/useUser/useUserProfile";
 import { findUserPDA } from "@/utils/pdas";
 import { lamportsToSol } from "@/utils/format";
 import { getBadgeTypeString } from "@/types/badge";
+import { convertSolToUSDWithPrice, getSolPrice } from "@/utils/currency";
 
 export default function DonationsPage() {
   const { publicKey: authority } = useWallet();
   const userPDA = authority ? findUserPDA(authority)[0] : undefined;
+  const [currentSolPrice, setCurrentSolPrice] = useState(0);
 
   const { profile, loading: profileLoading } = useUserProfile({
     authority,
@@ -23,6 +25,15 @@ export default function DonationsPage() {
   const { donations, loading: donationsLoading } = useDonationHistory({
     userPDA,
   });
+
+  useEffect(() => {
+    const fetchSolPrice = async () => {
+      const solPrice = await getSolPrice();
+      setCurrentSolPrice(solPrice);
+    };
+
+    fetchSolPrice();
+  }, []);
 
   // Load actual donation history
   const [donationStats, setDonationStats] = React.useState({
@@ -71,8 +82,8 @@ export default function DonationsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatusCard
           title="Total Donations"
-          value={donationStats.totalAmount}
-          isSol={true}
+          value={donationStats.totalAmount * currentSolPrice}
+          prefix="$"
         />
         <StatusCard
           title="Campaigns Supported"
@@ -151,7 +162,11 @@ export default function DonationsPage() {
                       {donation.campaign.toString().slice(0, 8)}...
                     </td>
                     <td className="px-4 py-3 text-sm text-white">
-                      ◎{lamportsToSol(donation.amount)}
+                      $
+                      {convertSolToUSDWithPrice(
+                        lamportsToSol(donation.amount),
+                        currentSolPrice
+                      ).toFixed(2)}
                     </td>
                     <td className="px-4 py-3 text-sm text-white">
                       {new Date(

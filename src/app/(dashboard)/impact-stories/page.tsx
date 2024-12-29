@@ -1,7 +1,7 @@
 // File: /app/(dashboard)/impact-stories/page.tsx
 "use client";
 import React from "react";
-import StatusCard from "@/components/dashboard/StatusCard";
+import StatusCard from "@/components/shared/StatusCard";
 import Card from "@/components/common/Card";
 import Button from "@/components/common/Button";
 import { useProgram } from "@/hooks/useProgram";
@@ -188,7 +188,9 @@ export default function ImpactStoriesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {successStories.slice(0, 2).map((story) => (
               <div key={story.title} className="space-y-2">
-                <p className="text-slate-300 italic">&quot;{story.description}&quot;</p>
+                <p className="text-slate-300 italic">
+                  &quot;{story.description}&quot;
+                </p>
                 <p className="text-sm text-slate-400">
                   - {story.organizationName}
                 </p>

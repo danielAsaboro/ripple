@@ -22,6 +22,9 @@ export default function TopNavBar() {
         <Link href="/" className="hover:text-green-400">
           Home
         </Link>
+        <a href="/campaigns/live" className="hover:text-green-400">
+          Donate
+        </a>
         <Link href="/about" className="hover:text-green-400">
           About
         </Link>

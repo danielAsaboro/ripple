@@ -1,8 +1,12 @@
+"use client"
 import React from "react";
 import Image from "next/image";
 import Button from "@/components/common/Button";
+import { useRouter } from "next/navigation";
 
 export default function DonateCTA() {
+
+  const router = useRouter()
   return (
     <section className="py-20 px-4 bg-slate-900">
       <div className="mx-auto max-w-7xl flex flex-col md:flex-row items-center justify-between">
@@ -15,7 +19,14 @@ export default function DonateCTA() {
             ripples into swells of lasting impact.
           </p>
           <div className="flex gap-4">
-            <Button size="lg">Donate Now</Button>
+            <Button
+              size="lg"
+              onClick={() => {
+                router.push("/campaigns/live");
+              }}
+            >
+              Donate Now
+            </Button>
             <Button variant="outline" size="lg">
               Start a Campaign
             </Button>
@@ -23,7 +34,7 @@ export default function DonateCTA() {
         </div>
         <div className="relative w-full md:w-1/3 aspect-[4/3]">
           <Image
-            src="/images/impact.jpg"
+            src="/images/home_page_woman.png"
             alt="Make a difference"
             fill
             className="object-cover rounded-lg"

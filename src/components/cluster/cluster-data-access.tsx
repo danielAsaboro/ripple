@@ -33,12 +33,13 @@ const defaultClusters: Cluster[] = [
     name: "Localnet",
     endpoint: "http://localhost:8899",
     network: ClusterNetwork.Localnet,
-    active: true,
+    // active: true,
   },
   {
     name: "Devnet",
     endpoint: clusterApiUrl("devnet"),
     network: ClusterNetwork.Devnet,
+    active: true,
   },
   {
     name: "Testnet",

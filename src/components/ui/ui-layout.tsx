@@ -5,6 +5,7 @@ import { ReactNode, Suspense, useEffect, useRef } from "react";
 import toast, { Toaster } from "react-hot-toast";
 
 import { ExplorerLink } from "../cluster/cluster-ui";
+import TopNavBar from "../common/Navigation/TopNavBar";
 
 export function UiLayout({
   children,
@@ -14,7 +15,7 @@ export function UiLayout({
   links: { label: string; path: string }[];
 }) {
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-slate-900">
       <div className="flex-grow">
         <Suspense
           fallback={

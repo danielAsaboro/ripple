@@ -2,13 +2,7 @@
 "use client";
 import { Program, AnchorProvider, Idl } from "@coral-xyz/anchor";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  ReactNode,
-} from "react";
+import { createContext, useEffect, useState, ReactNode } from "react";
 import { Ripple } from "../types/ripple";
 import RippleIDL from "../types/ripple.json";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
